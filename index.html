@@ -724,6 +724,26 @@ RULES.push(
  T("La música debería ser obligatoria en la escuela.",[["compulsory","mandatory","obligatory"]],[],"Music should be compulsory at school.","<b>compulsory</b> (<i>at school</i>)."),
  G("Free entry would make museums more ___ to low-income families. (accesibles)",["accessible"],"<b>accessible to</b>.")]}
 );
+const EXTRA6={
+r7:[
+ F("More people are making the decision of living alone.",[["decision to live"]],["decision of living"],"More people are making the decision to live alone.","<b>decide to</b> → <b>the decision to</b> + verbo."),
+ C("She made the choice ___ abroad.",["of studying","to study","studying"],"to study","<b>choose to</b> → <b>the choice to</b>."),
+ C("Their attempt ___ the problem failed.",["of solving","to solve","solving"],"to solve","<b>attempt to</b> → <b>an attempt to</b>."),
+ T("Tomó la decisión de dejar su trabajo.",[["decision to quit","decision to leave"]],["decision of"],"She made the decision to quit her job.","<b>make the decision to</b> + verbo.")],
+r6:[
+ F("Finances management should be taught in schools.",[["financial management","money management","financial literacy"]],["finances management"],"Financial management should be taught in schools.","Un sustantivo que describe a otro va sin <b>-s</b>; aquí, mejor el adjetivo: <b>financial</b> management / <b>financial literacy</b>."),
+ C("Schools should teach ___ literacy.",["finance","financial","finances"],"financial","<b>financial literacy</b> = saber gestionar el dinero.")],
+r8:[
+ C("Money management should be taught ___ children.",["for","to","at"],"to","Se enseña algo <b>to</b> alguien: <i>teach something to children</i>."),
+ T("Deberían enseñar a los niños a gestionar el dinero.",[["teach children how to manage","teach children to manage"],["money","finances"]],[],"Schools should teach children how to manage money.","<b>teach someone how to</b> + verbo.")],
+r12:[
+ F("Despite being important, few people do it.",[["despite its importance","although it is important","although it's important","even though it is important","even though it's important"]],["despite being important"],"Despite its importance, few people do it.","<i>Despite being…</i> toma el sujeto de la frase principal (<i>few people</i>). Usa <b>despite + sustantivo</b> o <b>although + frase</b>."),
+ OK("Despite being tired, she kept practicing.","Correcta: el sujeto es el mismo en las dos partes (<i>she</i> está cansada y <i>she</i> sigue)."),
+ T("Aunque es caro, mucha gente lo compra.",[["despite its price","despite the price","although it is expensive","although it's expensive","even though it is expensive","even though it's expensive","despite being expensive, it"]],["despite being expensive, many"],"Although it is expensive, many people buy it.","<b>Although it is expensive</b> / <b>Despite its price</b>.")],
+r9:[
+ F("Children should play more outside.",[["play outside more"]],["play more outside"],"Children should play outside more.","Lo natural: verbo + lugar + <b>more</b> al final.")]
+};
+RULES.forEach(r=>{if(EXTRA6[r.id]) r.items.push(...EXTRA6[r.id])});
 RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
 const ALL=RULES.flatMap(r=>r.items);
 const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
