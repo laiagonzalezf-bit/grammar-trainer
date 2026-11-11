@@ -70,8 +70,9 @@ const F=(q,must,not,model,why)=>({t:"fix",q,must,not,model,why});
 const OK=(q,why)=>({t:"ok",q,model:q,why});
 const T=(q,must,not,model,why)=>({t:"tr",q,must,not,model,why});
 const P=(q,models)=>({t:"para",q,models,model:models[0],why:"Comprueba: ¿has cambiado 2–3 cosas? ¿Significa exactamente lo mismo? ¿La gramática es correcta?"});
-const KIND={choose:"Elige la opción correcta",gap:"Escribe solo la palabra que falta (o la frase completa)",fix:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",ok:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",tr:"Tradúcela al inglés",para:"Parafrasea la frase, como en la introducción del ensayo"};
-const ORDER={choose:0,gap:1,fix:2,ok:2,tr:3,para:3};
+const A=(orig,acc,note)=>({t:"alt",orig,q:orig+"  →  …",acc:acc.map(N),models:acc,model:acc[0],why:(note?note+"<br>":"")+"Alternativas: <b>"+acc.join("</b> · <b>")+"</b>"});
+const KIND={alt:"Escribe otra forma de decirlo (sin repetir las mismas palabras)",choose:"Elige la opción correcta",gap:"Escribe solo la palabra que falta (o la frase completa)",fix:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",ok:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",tr:"Tradúcela al inglés",para:"Parafrasea la frase, como en la introducción del ensayo"};
+const ORDER={alt:1,choose:0,gap:1,fix:2,ok:2,tr:3,para:3};
 
 // ---------- content ----------
 const RULES=[
@@ -744,6 +745,43 @@ r9:[
  F("Children should play more outside.",[["play outside more"]],["play more outside"],"Children should play outside more.","Lo natural: verbo + lugar + <b>more</b> al final.")]
 };
 RULES.forEach(r=>{if(EXTRA6[r.id]) r.items.push(...EXTRA6[r.id])});
+RULES.push({id:"r28",name:"28 · Bloques para parafrasear",tip:["Te doy un trozo típico de las preguntas del IELTS. Escribe <b>otra forma de decirlo</b> que signifique exactamente lo mismo.","Si tu respuesta no está en mi lista, te enseño las que conozco y decides tú si la tuya también vale.","Apréndete 2–3 alternativas de cada bloque: así la introducción te sale sola en el examen."],items:[
+ A("The table shows",["The table illustrates","The table presents","The table compares","The table gives information about","The table provides information on","The table provides data on","The table depicts","The table outlines","The table reveals"],"Elige el verbo según el contenido: <i>compares</i> si hay grupos, <i>illustrates</i> en general."),
+ A("The line graph shows",["The line graph illustrates","The line chart illustrates","The line graph depicts","The line graph presents","The line graph tracks","The line graph compares","The line graph gives information about","The line graph provides data on"]),
+ A("The pie charts show",["The pie charts illustrate","The pie charts compare","The pie charts present","The pie charts give information about","The pie charts provide data on","The pie charts depict"]),
+ A("people aged 18 to 30",["people aged between 18 and 30","18- to 30-year-olds","18 to 30-year-olds","young adults aged 18 to 30","young adults aged between 18 and 30","people between the ages of 18 and 30","those aged 18 to 30","those aged between 18 and 30","individuals aged between 18 and 30"],"Ojo: <i>people from 18 to 30 years</i> no funciona; hace falta <b>aged</b> o <b>years old</b>."),
+ A("leisure activities",["free-time activities","free time activities","pastimes","recreational activities","hobbies","leisure pursuits"]),
+ A("how much time",["the amount of time","the length of time","the number of hours","the time"]),
+ A("between 2013 and 2021",["from 2013 to 2021","over the period from 2013 to 2021","over an eight-year period","over a period of eight years","in the period between 2013 and 2021","over the period 2013 to 2021"]),
+ A("the number of visitors",["how many people visited","how many visitors","visitor numbers","the number of people who visited","attendance figures","how many people went"]),
+ A("the average price",["the mean price","average prices","how much it cost on average","the typical price"]),
+ A("how households spent their money",["household expenditure","household spending","how families spent their income","the spending patterns of households","the way households spent their money","what households spent their money on","how families spent their money"]),
+ A("the percentage of",["the proportion of","the share of","the rate of","the figure for"]),
+ A("changed",["evolved","developed","altered","shifted","varied","was transformed"]),
+ A("a town center",["the center of a town","a town's central area","the downtown area of a town","a town centre","the central area of a town"]),
+ A("today",["the present day","now","at present","the present","nowadays"]),
+ A("in three countries",["across three countries","in three different countries","in three nations"]),
+ A("Some people believe that",["It is sometimes argued that","It is often argued that","Some argue that","It is commonly believed that","Many people think that","It is widely believed that","Some claim that","It is often claimed that","There is a view that","According to some people,","Some people are of the opinion that"]),
+ A("children",["young people","kids","youngsters","young children","schoolchildren","pupils","minors"],"Cuidado: <i>young people</i> y <i>the younger generation</i> pueden incluir adolescentes y jóvenes de 20; úsalos solo si encaja."),
+ A("old people",["the elderly","older people","older adults","senior citizens","elderly people","seniors","the older generation"]),
+ A("the government",["the authorities","the state","policymakers","governments","public authorities","the public sector"]),
+ A("money",["funds","funding","financial resources","resources","public money"]),
+ A("important",["essential","crucial","vital","significant","key","of great importance","fundamental","of vital importance"]),
+ A("more and more people",["an increasing number of people","a growing number of people","increasing numbers of people","a rising number of people","an ever-growing number of people"]),
+ A("nowadays",["these days","today","in today's world","at present","currently","in the modern world","in recent times"]),
+ A("a big problem",["a serious problem","a major issue","a significant challenge","a pressing concern","a serious issue","a major concern","a major problem","a significant problem"]),
+ A("bad for health",["harmful to health","detrimental to health","damaging to health","unhealthy","harmful to people's health","detrimental to people's health"]),
+ A("work from home",["work remotely","telework","telecommute","work from a home office"]),
+ A("learn a foreign language",["study a second language","acquire a foreign language","learn another language","pick up a new language","learn a second language","study a foreign language"]),
+ A("cars",["private vehicles","motor vehicles","private transport","automobiles","vehicles","private cars"]),
+ A("the environment",["the planet","nature","the natural world","ecosystems"]),
+ A("free (no cost)",["free of charge","at no cost","without charge","at no charge","cost-free"]),
+ A("advantages and disadvantages",["pros and cons","benefits and drawbacks","merits and drawbacks","advantages and drawbacks","positive and negative aspects","benefits and downsides"]),
+ A("rather than",["instead of","as opposed to","in preference to"]),
+ A("famous people",["celebrities","public figures","well-known people","stars","high-profile figures"]),
+ A("use the internet",["go online","access the internet","browse the web","be online","use the web"]),
+ A("should",["ought to","need to","must","have a responsibility to","have a duty to"])
+]});
 RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
 const ALL=RULES.flatMap(r=>r.items);
 const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
@@ -843,6 +881,7 @@ function home(){S=null;render()}
 
 function check(it,val,claimOk){
   if(it.t==="choose") return val===it.a;
+  if(it.t==="alt") return it.acc.includes(N(val).replace(/^the /,"the "));
   if(it.t==="gap"){
     if(it.acc.includes(N(val))) return true;
     const base=it.q.replace(/\s*\([^)]*\)\s*$/,"");
@@ -882,7 +921,7 @@ function answer(val,claimOk,forced){
   if(S.answered) return;
   const it=ALL.find(i=>i.id===S.cur);
   let ok=forced!==undefined?forced:check(it,val,claimOk); S.typos=[];
-  if(forced===undefined&&!ok&&!claimOk&&it.t!=="choose"&&it.t!=="para"&&it.rule!=="r15"){
+  if(forced===undefined&&!ok&&!claimOk&&it.t!=="choose"&&it.t!=="para"&&it.t!=="alt"&&it.rule!=="r15"){
     const f=fixTypos(it,val);
     if(f.fixes.length&&check(it,f.text,false)){S.typos=f.fixes}
   }
@@ -995,10 +1034,15 @@ function render(){
         ${S.answered?"":`<div class="row"><button class="primary" id="pgood">✓ La mía está bien</button><button id="pbad">✗ Necesito repasarla</button></div>
         <form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: 1 = está bien · 2 = repasarla" aria-label="1 está bien, 2 repasarla"></form>`}`;
     }
+  }else if(it.t==="alt"&&S.paraVal&&!S.answered){
+    body=`<div class="fb" style="background:var(--chip)"><span><b>Tu versión:</b> ${esc(S.paraVal)}</span><span class="muted">No está en mi lista. Compárala: ¿significa <b>exactamente</b> lo mismo y suena natural?</span></div>
+      <div class="reminder"><b>Alternativas que conozco:</b><ul>${it.models.map(m=>`<li>${esc(m)}</li>`).join("")}</ul></div>
+      <div class="row"><button class="primary" id="pgood">✓ La mía también vale</button><button id="pbad">✗ No, me equivoqué</button></div>
+      <form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: 1 = vale · 2 = me equivoqué" aria-label="1 vale, 2 me equivoqué"></form>`;
   }else if(it.t==="choose"){
     body=`<div class="opts">${it.opts.map(o=>{let cls="";if(S.answered){if(o===it.a)cls="right";else if(o===S.lastVal)cls="wrong"}return `<button data-o="${esc(o)}" class="${cls}" ${S.answered?"disabled":""}><span class="muted">${it.opts.indexOf(o)+1} ·</span> ${esc(o)}</button>`}).join("")}</div>${S.answered?"":`<form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: escribe ${it.opts.map((_,i)=>i+1).join(", ")} y pulsa Intro" aria-label="Número de la opción"></form>`}`;
   }else{
-    const ph=it.t==="gap"?"Escribe la palabra…":it.t==="tr"?"Escribe la frase en inglés…":"Escribe la frase corregida…";
+    const ph=it.t==="alt"?"Escribe tu alternativa…":it.t==="gap"?"Escribe la palabra…":it.t==="tr"?"Escribe la frase en inglés…":"Escribe la frase corregida…";
     const ph2=ph+((it.t==="fix"||it.t==="ok")?" (o escribe ok si ya es correcta)":"");
     body=S.answered?"":`<form id="f" class="row" style="display:grid;gap:8px"><input type="text" id="in" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="${ph2}" aria-label="${ph}">
       <div class="row"><button class="primary" type="submit" ${S.answered?"disabled":""}>Comprobar</button>${(it.t==="fix"||it.t==="ok")?`<button type="button" id="okb" ${S.answered?"disabled":""}>Ya es correcta</button>`:""}</div></form>`;
@@ -1030,7 +1074,8 @@ function render(){
   if(f&&!S.answered){const inp=document.getElementById("in");
     f.onsubmit=e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;const lv=v.toLowerCase();
       if(it.t==="choose"){const k="123456".indexOf(lv)>=0?+lv-1:"abcdef".indexOf(lv);if(k>=0&&k<it.opts.length)answer(it.opts[k],false);else{inp.value="";inp.placeholder="Escribe solo el número: "+it.opts.map((_,i)=>i+1).join(", ")}return}
-      if(it.t==="para"){if(lv==="1"||lv==="✓")answer(S.paraVal,false,true);else if(lv==="2"||lv==="✗")answer(S.paraVal,false,false);else{inp.value="";inp.placeholder="Escribe 1 o 2"}return}
+      if(it.t==="alt"&&!S.paraVal){if(N(v)!==N(it.orig)&&!check(it,v)){S.paraVal=v;render();return}return answer(v,false)}
+      if(it.t==="para"||it.t==="alt"){if(lv==="1"||lv==="✓")answer(S.paraVal,false,true);else if(lv==="2"||lv==="✗")answer(S.paraVal,false,false);else{inp.value="";inp.placeholder="Escribe 1 o 2"}return}
       if((it.t==="fix"||it.t==="ok")&&(lv==="ok"||lv==="="))return answer("",true);
       answer(v,false)};
     const ok=document.getElementById("okb"); if(ok) ok.onclick=()=>answer("",true);
