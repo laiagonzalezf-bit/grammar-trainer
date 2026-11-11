@@ -843,7 +843,29 @@ const WHYNOT={
 const KEY="grammar-trainer-v1";
 let box={}; try{box=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){box={}}
 let days={}; try{days=JSON.parse(localStorage.getItem(KEY+"_d")||"{}")}catch(e){days={}}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(box));localStorage.setItem(KEY+"_d",JSON.stringify(days))}catch(e){}};
+let stamp=0; try{stamp=+(localStorage.getItem(KEY+"_t")||0)}catch(e){}
+// Cloud copy of the progress (only inside claude.ai, signed in): survives updates and syncs devices
+let CLOUD=null, cloudState="", cloudBusy=false, cloudAgain=false, cloudTimer=null;
+async function cloudPush(){
+  if(!CLOUD)return; if(cloudBusy){cloudAgain=true;return}
+  cloudBusy=true;
+  try{await CLOUD.set({box,days,t:stamp});cloudState="ok"}catch(e){cloudState="err"}
+  cloudBusy=false; if(cloudAgain){cloudAgain=false;cloudPush()}
+}
+const save=()=>{stamp=Date.now();try{localStorage.setItem(KEY,JSON.stringify(box));localStorage.setItem(KEY+"_d",JSON.stringify(days));localStorage.setItem(KEY+"_t",String(stamp))}catch(e){}
+  if(CLOUD){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudPush,1200)}};
+(async()=>{try{
+  if(!(window.claude&&window.claude.use))return;
+  const [db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+  if(!db||!user)return; const uid=await user.id(); if(!uid)return;
+  const ref=db.doc("data/users/"+uid+"/progress");
+  const snap=await ref.get(); CLOUD=ref;
+  const r=snap.exists?snap.data():null;
+  if(r&&(+r.t||0)>stamp){box=Object.assign({},r.box||{});days=Object.assign({},r.days||{});stamp=+r.t;
+    try{localStorage.setItem(KEY,JSON.stringify(box));localStorage.setItem(KEY+"_d",JSON.stringify(days));localStorage.setItem(KEY+"_t",String(stamp))}catch(e){}}
+  else if(Object.keys(box).length){if(!stamp)stamp=Date.now();await cloudPush()}
+  cloudState="ok"; if(!S)render();
+}catch(e){CLOUD=null}})();
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
 let S=null; // session
 
@@ -1003,7 +1025,7 @@ function render(){
       <div class="hero"><h2>¿Qué hago hoy?</h2>
         <p class="muted">Sugerencia: <b>una regla nueva</b> (unos 8 min) + el <b>repaso mezclado</b> (unos 10 min). El repaso mezcla todas las reglas, como en el examen.</p>
         <div class="row"><button class="primary" id="mix">Repaso mezclado (15)</button><button class="primary" id="endless">Práctica continua ∞</button><button id="wrong" ${wrong?"":"disabled"}>Solo mis fallos (${wrong})</button></div>
-        <p class="muted">Has practicado ${seen} de ${ALL.length} ejercicios.</p></div>
+        <p class="muted">Has practicado ${seen} de ${ALL.length} ejercicios.${CLOUD?(cloudState==="err"?" · ⚠ No se ha podido guardar en tu cuenta":" · ☁ Progreso guardado en tu cuenta"):""}</p></div>
       <h2>Las reglas</h2>
       <div class="grid">${RULES.map(r=>`<button class="rule" data-r="${r.id}"><b>${r.name}</b>${(t=>t.html+`<span class="muted">${t.n} ejercicios${t.m+t.l+t.f?` · <b style="color:var(--ok)">${t.m}</b> dominados · ${t.l} aprendiendo${t.f?` · <span style="color:var(--pen)">${t.f} por repasar</span>`:""}`:" · sin empezar"}</span>`)(tiers(r))}</button>`).join("")}</div>
       <p class="muted" style="font-size:13px">Verde oscuro = dominado (bien en <b>dos días distintos</b>) · verde claro = aprendiendo (bien una vez) · rojo = por repasar (fallado la última vez).</p>
