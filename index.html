@@ -778,10 +778,14 @@ const WHYNOT={
 // ---------- state ----------
 const KEY="grammar-trainer-v1";
 let box={}; try{box=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){box={}}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(box))}catch(e){}};
+let days={}; try{days=JSON.parse(localStorage.getItem(KEY+"_d")||"{}")}catch(e){days={}}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(box));localStorage.setItem(KEY+"_d",JSON.stringify(days))}catch(e){}};
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
 let S=null; // session
 
 function mastery(r){const its=r.items;const m=its.filter(i=>(box[i.id]||0)>=2).length;return Math.round(m/its.length*100)}
+function tiers(r){const n=r.items.length;let m=0,l=0,f=0;r.items.forEach(i=>{const b=box[i.id];if(b===undefined)return;if(b>=2)m++;else if(b===1)l++;else f++});
+  const pc=x=>x/n*100;return {m,l,f,n,html:`<span class="bar" style="display:flex"><i style="width:${pc(m)}%"></i><i style="width:${pc(l)}%;background:var(--ok);opacity:.4"></i><i style="width:${pc(f)}%;background:var(--pen);opacity:.55"></i></span>`}}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
 function startRule(rid){
@@ -793,7 +797,7 @@ function startRule(rid){
 }
 function startMixed(onlyWrong){
   let pool=ALL.slice();
-  if(onlyWrong) pool=pool.filter(i=>box[i.id]!==undefined&&(box[i.id]||0)<2);
+  if(onlyWrong) pool=pool.filter(i=>box[i.id]===0);
   pool=shuffle(pool).sort((a,b)=>(box[a.id]||0)-(box[b.id]||0)).slice(0,15);
   pool=shuffle(pool);
   S={mode:onlyWrong?"wrong":"mixed",title:onlyWrong?"Solo mis fallos":"Repaso mezclado",queue:pool.map(i=>i.id),stage:"q",log:{},first:{},cur:null,answered:false};
@@ -860,7 +864,11 @@ function answer(val,claimOk,forced){
     }
   }
   S.answered=true; S.lastOk=ok; S.lastVal=claimOk?"(Ya es correcta)":val;
-  if(!(it.id in S.first)){S.first[it.id]=ok; box[it.id]=ok?Math.min((box[it.id]||0)+1,4):0; save()}
+  if(!(it.id in S.first)){S.first[it.id]=ok;
+    // learning = 1 correct; mastered = correct again on a DIFFERENT day; any miss resets
+    if(!ok){box[it.id]=0;delete days[it.id]}
+    else{const b=box[it.id]||0;if(b===0||days[it.id]!==today()){box[it.id]=Math.min(b+1,4);days[it.id]=today()}}
+    save()}
   (S.log[it.rule]=S.log[it.rule]||{ok:0,bad:0})[ok?"ok":"bad"]++;
   if(!ok){S.queue.splice(Math.min(3,S.queue.length),0,it.id)}
   render();
@@ -880,7 +888,7 @@ function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","
 function render(){
   if(!S){
     const seen=ALL.filter(i=>box[i.id]!==undefined).length;
-    const wrong=ALL.filter(i=>box[i.id]!==undefined&&(box[i.id]||0)<2).length;
+    const wrong=ALL.filter(i=>box[i.id]===0).length;
     app.innerHTML=`<header style="display:grid;gap:6px"><h1>Grammar Trainer</h1>
       <p class="muted">Ejercicios hechos con tus propios errores. Cada regla empieza con un recordatorio y va de lo fácil (elegir) a lo difícil (traducir). Lo que falles vuelve a salir.</p></header>
       <div class="hero"><h2>¿Qué hago hoy?</h2>
@@ -888,12 +896,13 @@ function render(){
         <div class="row"><button class="primary" id="mix">Repaso mezclado (15)</button><button id="wrong" ${wrong?"":"disabled"}>Solo mis fallos (${wrong})</button></div>
         <p class="muted">Has practicado ${seen} de ${ALL.length} ejercicios.</p></div>
       <h2>Las reglas</h2>
-      <div class="grid">${RULES.map(r=>`<button class="rule" data-r="${r.id}"><b>${r.name}</b><span class="bar"><i style="width:${mastery(r)}%"></i></span><span class="muted">${r.items.length} ejercicios · dominado ${mastery(r)}%</span></button>`).join("")}</div>
+      <div class="grid">${RULES.map(r=>`<button class="rule" data-r="${r.id}"><b>${r.name}</b>${(t=>t.html+`<span class="muted">${t.n} ejercicios${t.m+t.l+t.f?` · <b style="color:var(--ok)">${t.m}</b> dominados · ${t.l} aprendiendo${t.f?` · <span style="color:var(--pen)">${t.f} por repasar</span>`:""}`:" · sin empezar"}</span>`)(tiers(r))}</button>`).join("")}</div>
+      <p class="muted" style="font-size:13px">Verde oscuro = dominado (bien en <b>dos días distintos</b>) · verde claro = aprendiendo (bien una vez) · rojo = por repasar (fallado la última vez).</p>
       <div class="row"><button class="small" id="reset">Borrar mi progreso</button></div>`;
     document.getElementById("mix").onclick=()=>startMixed(false);
     const w=document.getElementById("wrong"); if(w) w.onclick=()=>startMixed(true);
     app.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>startRule(b.dataset.r));
-    document.getElementById("reset").onclick=e=>{if(e.target.dataset.sure){box={};save();render()}else{e.target.dataset.sure=1;e.target.textContent="Pulsa otra vez para confirmar"}};
+    document.getElementById("reset").onclick=e=>{if(e.target.dataset.sure){box={};days={};save();render()}else{e.target.dataset.sure=1;e.target.textContent="Pulsa otra vez para confirmar"}};
     return;
   }
   if(S.stage==="empty"){
