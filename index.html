@@ -985,14 +985,15 @@ Reply ONLY with JSON: {"ok": true or false, "feedback": "1-2 short sentences in 
   // self-assessed items: Claude decides
   if(!S.answered&&(it.t==="para"||it.t==="alt")&&S.ai&&!S.ai.error){const keep=S.ai;answer(val,false,keep.ok);S.ai=keep}
   // answered wrong but Claude says it is fine: count it as correct automatically
-  else if(S.answered&&!S.lastOk&&S.ai&&S.ai.ok&&S.override){S.ai.fixed=true;aiOverride();return}
+  else if(S.answered&&!S.lastOk&&S.ai&&S.ai.ok){S.ai.fixed=true;aiOverride();return}
   render();
 }
 function aiHTML(){if(!S.ai)return"";if(S.ai.loading)return `<div class="reminder">Claude está mirando tu respuesta…</div>`;if(S.ai.error)return `<div class="reminder">${esc(S.ai.error)}</div>`;
   return `<div class="reminder"><b>Claude: ${S.ai.ok?"✓ es correcta":"✗ no es correcta"}.</b> ${esc(S.ai.feedback)}${S.ai.better?`<br>Versión mejor: <b>${esc(S.ai.better)}</b>`:""}${S.ai.fixed?`<br><b>✓ La he contado como correcta</b> en tu progreso.`:""}</div>`}
-function aiOverride(){const it=ALL.find(i=>i.id===S.cur);if(!it||!S.override)return;
-  S.first[it.id]=true;const b=S.override.box||0;box[it.id]=b;if(S.override.day)days[it.id]=S.override.day;else delete days[it.id];
-  if(b===0||days[it.id]!==today()){box[it.id]=Math.min(b+1,4);days[it.id]=today()}save();
+function aiOverride(){const it=ALL.find(i=>i.id===S.cur);if(!it)return;
+  // first attempt in this session: restore the progress as if it had been right
+  if(S.override){S.first[it.id]=true;const b=S.override.box||0;box[it.id]=b;if(S.override.day)days[it.id]=S.override.day;else delete days[it.id];
+    if(b===0||days[it.id]!==today()){box[it.id]=Math.min(b+1,4);days[it.id]=today()}save()}
   const l=S.log[it.rule];if(l){l.bad--;l.ok++}const k=S.queue.indexOf(it.id);if(k>=0)S.queue.splice(k,1);
   S.lastOk=true;S.override=null;render()}
 function answer(val,claimOk,forced){
