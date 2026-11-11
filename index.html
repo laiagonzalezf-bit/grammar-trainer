@@ -977,6 +977,8 @@ Exercise: ${it.orig||it.q.replace(/<[^>]+>/g,"")}
 Reference answer(s): ${refs}
 Student's answer: ${val}
 Decide if the student's answer is acceptable: correct grammar, correct spelling (any spelling mistake makes it NOT acceptable), natural English, and the same meaning as required (no information added or lost). It does not need to match the references.
+Be fair, not pedantic: standard IELTS paraphrasing moves are GOOD (e.g. show -> illustrate/compare/present/depict/give information about; active -> passive; noun phrases like "household spending"). Only call something wrong if a real examiner would mark it as an error. In the feedback, name the real errors first and do not invent problems; if a choice is fine but could sound more natural, say so as a tip, not as an error.
+For paraphrase exercises, the "better" version must NOT copy the original sentence's wording: keep the student's own ideas and structure and only fix what is wrong.
 Reply ONLY with JSON: {"ok": true or false, "feedback": "1-2 short sentences in Spanish explaining why, with simple examples, no grammar jargon", "better": "a corrected or more natural version in English, or empty string if already perfect"}`;
   try{const r=await SAMPLE.json(prompt,{modelTier:"default"});S.ai={ok:!!(r&&r.ok),feedback:String((r&&r.feedback)||""),better:String((r&&r.better)||"")}}
   catch(e){S.ai={error:e&&e.code==="rate_limited"?"Demasiadas consultas seguidas: espera un poco.":e&&e.code==="not_granted"?"No has dado permiso para consultar a Claude.":"No he podido consultar a Claude ahora."}}
