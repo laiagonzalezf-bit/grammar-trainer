@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grammar Trainer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: home = grid of rule cards with mastery bars; session = one exercise card at a time with instant feedback */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#1c2230; --muted:#5d6676; --line:#dde2ea;
+  --pen:#c2342b; --pen-soft:#fbe9e7; --ok:#1f7a4d; --ok-soft:#e3f3ea; --chip:#e9edf3; --accent:#2d4a8a; --accent-soft:#e6ecf8;
+  --display:"Fraunces", Georgia, serif; --body:"Atkinson Hyperlegible", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12151c; --surface:#1b202a; --ink:#e7eaf0; --muted:#9aa3b2; --line:#2c3340;
+  --pen:#ff7a6e; --pen-soft:#3a1f1d; --ok:#5fd39a; --ok-soft:#173327; --chip:#262c38; --accent:#9db7ff; --accent-soft:#1f2a44; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12151c; --surface:#1b202a; --ink:#e7eaf0; --muted:#9aa3b2; --line:#2c3340;
+  --pen:#ff7a6e; --pen-soft:#3a1f1d; --ok:#5fd39a; --ok-soft:#173327; --chip:#262c38; --accent:#9db7ff; --accent-soft:#1f2a44; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:680px;margin:0 auto;display:grid;gap:16px}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(24px,5vw,32px);margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:21px;margin:0}
+p{margin:0}
+.muted{color:var(--muted);font-size:14px}
+button{font-family:var(--body);font-size:16px;cursor:pointer;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.small{font-size:14px;padding:6px 12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hero{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:8px;text-align:left;font-size:15px}
+.rule b{font-size:15px}
+.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:14px}
+.tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.kind{font-size:13px;color:var(--muted)}
+.q{font-size:clamp(19px,4.4vw,22px);line-height:1.4}
+.opts{display:grid;gap:8px}
+.opts button{text-align:left}
+.opts button.right{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.opts button.wrong{border-color:var(--pen);background:var(--pen-soft);color:var(--pen)}
+input[type=text]{width:100%;min-width:0;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.fb{border-radius:12px;padding:12px 14px;display:grid;gap:6px;font-size:15px}
+.fb.good{background:var(--ok-soft)} .fb.bad{background:var(--pen-soft)}
+.fb .h{font-weight:700} .good .h{color:var(--ok)} .bad .h{color:var(--pen)}
+.reminder{background:var(--accent-soft);border-radius:12px;padding:14px 16px;display:grid;gap:8px;font-size:15px}
+.reminder ul{margin:0;padding-left:20px;display:grid;gap:4px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.out{width:100%;min-height:110px;font-size:12px;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+table.sum{width:100%;border-collapse:collapse;font-size:14px}
+table.sum td{padding:6px 4px;border-bottom:1px solid var(--line)}
+table.sum td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+// ---------- helpers ----------
+const N=s=>s.toLowerCase().replace(/[’‘`]/g,"'").replace(/\bwon't\b/g,"will not").replace(/\bcan't\b/g,"cannot").replace(/n't\b/g," not").replace(/'ve\b/g," have").replace(/'re\b/g," are").replace(/\bi'm\b/g,"i am").replace(/'ll\b/g," will").replace(/[“”]/g,'"').replace(/\s+/g," ").replace(/[.!?]+$/,"").trim();
+const C=(q,opts,a,why)=>({t:"choose",q,opts,a,why});
+const G=(q,acc,why)=>({t:"gap",q,acc:acc.map(N),model:acc[0],why});
+const F=(q,must,not,model,why)=>({t:"fix",q,must,not,model,why});
+const OK=(q,why)=>({t:"ok",q,model:q,why});
+const T=(q,must,not,model,why)=>({t:"tr",q,must,not,model,why});
+const P=(q,models)=>({t:"para",q,models,model:models[0],why:"Comprueba: ¿has cambiado 2–3 cosas? ¿Significa exactamente lo mismo? ¿La gramática es correcta?"});
+const KIND={choose:"Elige la opción correcta",gap:"Escribe solo la palabra que falta (o la frase completa)",fix:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",ok:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",tr:"Tradúcela al inglés",para:"Parafrasea la frase, como en la introducción del ensayo"};
+const ORDER={choose:0,gap:1,fix:2,ok:2,tr:3,para:3};
+
+// ---------- content ----------
+const RULES=[
+{id:"r1",name:"1 · Formas del verbo",tip:["Mira la palabra <b>justo antes</b> del verbo:","<b>to, did/didn't, will, would, can, should</b> → 1ª forma (<i>to become, didn't know</i>)","<b>have / has / had</b> → 3ª forma (<i>has fallen, have become</i>)","<b>be</b> + algo hecho → 3ª forma (<i>should be taught</i>)","nada delante + pasado terminado → 2ª forma (<i>prices fell in 2015</i>)"],items:[
+ C("Rents have ___ a lot since 2020.",["rise","rose","risen"],"risen","Delante hay <b>have</b> → 3ª forma: rise – rose – <b>risen</b>."),
+ C("Last year, prices ___ by 10%.",["fell","felt","fallen"],"fell","Pasado terminado (<i>last year</i>) → 2ª forma: fall – <b>fell</b>. <i>Felt</i> es de <i>feel</i> (sentir)."),
+ G("I didn't ___ the answer. (know)",["know"],"<b>didn't</b> ya marca el pasado → 1ª forma: <i>didn't know</i>."),
+ G("It's easy to ___ addicted to social media. (become)",["become"],"Después de <b>to</b> → 1ª forma: <i>to become</i>."),
+ G("Music should be ___ in every school. (teach)",["taught"],"<b>be</b> + algo hecho → 3ª forma: teach – taught – <b>taught</b>. (<i>Thought</i> es de <i>think</i>.)"),
+ G("If we gave it up, we would ___ something important. (lose)",["lose"],"Después de <b>would</b> → 1ª forma: <i>would lose</i>."),
+ F("The number of tourists has became much higher.",[["has become"]],["has became"],"The number of tourists has become much higher.","<b>has</b> → 3ª forma: become – became – <b>become</b>."),
+ F("When something brokes at home, it's expensive.",[["breaks"]],["brokes"],"When something breaks at home, it's expensive.","break es irregular: presente <b>breaks</b> (pasado <i>broke</i>)."),
+ OK("Prices have risen sharply in recent years.","Correcta: <i>have</i> + <b>risen</b> (3ª forma)."),
+ T("Los precios bajaron un 10% en 2015.",[["fell","dropped","decreased","declined"],["by 10%"]],["felt","have fallen","has fallen"],"Prices fell by 10% in 2015.","Fecha terminada → 2ª forma (<b>fell</b>), y el cambio va con <b>by</b>.")]},
+{id:"r2",name:"2 · Tiempos verbales",tip:["<b>ago, in 2015, last year</b> → pasado simple (<i>went, rose</i>)","<b>since, for, recently, in recent years</b> → <i>have/has</i> + 3ª (<i>have risen</i>)","<b>used to</b> = hábito pasado que ya no haces · <b>usually</b> = hábito de ahora","Después de <b>when / if / until</b> hablando del futuro → presente, sin <i>will</i>"],items:[
+ C("Two years ago, we ___ to New York.",["have gone","went","go"],"went","<b>ago</b> → pasado simple: <i>went</i>."),
+ C("Rents ___ since 2015.",["rose","have risen"],"have risen","<b>since</b> → del pasado hasta hoy: <i>have risen</i>."),
+ C("I ___ walk my dog on the beach on Saturdays. (lo haces ahora)",["used to","usually"],"usually","Hábito de ahora → <b>usually</b>. <i>Used to</i> es solo para el pasado."),
+ C("I want to feel well when I ___ 50.",["will be","am"],"am","Después de <b>when</b> hablando del futuro → presente: <i>when I'm 50</i>."),
+ G("By 2020, the price ___ ___ . (double)",["had doubled"],"<b>By</b> + año pasado → <i>had</i> + 3ª forma: <b>had doubled</b>."),
+ F("I used to try to catch up on chores every Saturday. (lo sigues haciendo)",[["usually"]],["used to"],"I usually try to catch up on chores every Saturday.","Lo haces <b>ahora</b> → <i>usually</i>, no <i>used to</i>."),
+ OK("I used to live in Horta when I was a child.","Correcta: ya no vives allí → <b>used to</b>."),
+ T("Te llamaré cuando llegue a casa.",[["when i get home"]],["will get","when i will"],"I'll call you when I get home.","Después de <b>when</b> → presente: <i>when I get home</i>.")]},
+{id:"r3",name:"3 · Uno o más (-s)",tip:["Busca <b>quién</b> hace la acción y <b>tapa con el dedo</b> las palabras de en medio","<b>Uno</b> → verbo + s (<i>has, is, does, needs</i>) · <b>varios</b> → sin s","<b>people</b> = varios · <b>everyone, every, the number of, the main cause</b> = uno"],items:[
+ C("People who live downtown ___ more.",["pay","pays"],"pay","<b>People</b> = varios → <i>pay</i>."),
+ C("The number of cars ___ fallen.",["have","has"],"has","<b>The number</b> = uno → <i>has</i>."),
+ C("Everyone ___ some time alone.",["need","needs"],"needs","<b>Everyone</b> = uno → <i>needs</i>."),
+ C("The need to share living costs and responsibilities ___ the advantages.",["outweigh","outweighs"],"outweighs","Tapa el medio: <b>the need</b> = uno → <i>outweighs</i>."),
+ F("People is worried about rising rents.",[["people are"]],["people is"],"People are worried about rising rents.","<b>People</b> = varios → <i>are</i>."),
+ F("A country that do not invest in culture loses jobs.",[["does not","doesn't"]],["that do not","that don't"],"A country that does not invest in culture loses jobs.","<b>A country</b> = uno → <i>does</i>."),
+ F("The main cause of traffic jams are deliveries.",[["jams is"]],["jams are"],"The main cause of traffic jams is deliveries.","<b>The main cause</b> = uno → <i>is</i>."),
+ OK("A lot of people come to Barcelona every summer.","Correcta: <i>a lot of people</i> = varios → <b>come</b>."),
+ T("La gente que vive en el centro paga alquileres altos.",[["people who live","people living","people that live"],["pay"]],["pays","who lives","people is"],"People who live downtown pay high rents.","<b>People</b> = varios → <i>live</i>, <i>pay</i> (sin -s).")]},
+{id:"r4",name:"4 · Contable o no",tip:["Incontables (nunca -s, nunca <i>a</i>): <b>advice, information, furniture, employment, seating, research, traffic, progress</b>","Contables: <b>many, fewer, the number of</b> · incontables: <b>much, less, the amount of</b>","Plurales raros: <b>life → lives</b>, child → children"],items:[
+ C("He gave me some useful ___.",["advice","advices"],"advice","<b>advice</b> es incontable: nunca -s."),
+ C("I'd like to work ___ hours.",["less","fewer"],"fewer","Las horas se cuentan → <b>fewer</b>."),
+ C("Their ___ have changed a lot.",["lifes","lives"],"lives","life → <b>lives</b> (como knife → knives)."),
+ C("the ___ of time we spend online",["number","amount"],"amount","<i>time</i> no se cuenta → <b>amount</b>."),
+ G("We bought new ___ for the flat. (muebles)",["furniture"],"<b>furniture</b>: incontable, sin -s."),
+ F("Festivals create a lot of temporary employments.",[["employment","jobs"]],["employments"],"Festivals create a lot of temporary employment.","<b>employment</b> no tiene plural (o usa <i>jobs</i>)."),
+ F("The café added an outdoor seatings.",[["outdoor seating"]],["seatings"],"The café added outdoor seating.","<b>seating</b> es incontable: sin -s (o <i>an outdoor seating area</i>)."),
+ OK("There is less traffic on Sundays.","Correcta: <i>traffic</i> no se cuenta → <b>less</b>."),
+ T("Me dio varios consejos útiles.",[["pieces of advice","advice"]],["advices"],"He gave me several useful pieces of advice.","Para contar <i>advice</i>: <b>pieces of advice</b>.")]},
+{id:"r5",name:"5 · Artículos",tip:["En <b>general</b> (plural o incontable) → nada: <i>Culture matters. People need space.</i>","<b>Una</b> cosa nueva → <b>a / an</b>: <i>a yard, an apartment</i>","Algo <b>concreto o único</b> → <b>the</b>: <i>the countryside, the world, the US</i>","Sin artículo: <b>at university / at school / at home</b>, y antes de posesivos (<i>today's plan</i>)"],items:[
+ C("___ is important for society.",["The culture","Culture"],"Culture","Cultura <b>en general</b> → sin artículo."),
+ C("I studied music at ___ university.",["the","(nada)"],"(nada)","Caso fijo: <b>at university</b>, sin <i>the</i>."),
+ C("She lives in ___ US.",["the","(nada)"],"the","Países con <i>States</i> → <b>the US</b>."),
+ C("They live in a house with ___ yard.",["a","the","(nada)"],"a","Una cosa → <b>a</b> yard."),
+ F("I prefer living in countryside.",[["the countryside"]],["in countryside"],"I prefer living in the countryside.","Único → <b>the</b> countryside."),
+ F("On the left side of the today's plan, there is a bar.",[["of today's plan"]],["the today's"],"On the left side of today's plan, there is a bar.","Antes de un posesivo (<i>today's</i>) no va <i>the</i>."),
+ OK("People need green spaces in cities.","Correcta: en general → sin artículo."),
+ T("La tecnología tiene un gran impacto en la educación.",[["impact on education"]],["the education","impact in","impact to"],"Technology has a big impact on education.","Educación en general → sin <i>the</i>; y <b>impact on</b>.")]},
+{id:"r6",name:"6 · Formas de palabra",tip:["Al lado de un <b>sustantivo</b> → adjetivo: <i>a dramatic change</i>","Al lado de un <b>verbo</b> → adverbio -ly: <i>it changed dramatically</i>","<b>economic</b> = de la economía · <b>economical</b> = barato","Español <i>-cional</i> → inglés <b>-tional</b>"],items:[
+ C("the ___ crisis",["economy","economic","economical"],"economic","Al lado de <i>crisis</i> → adjetivo; de la economía → <b>economic</b>."),
+ C("a more ___ car (más barato)",["economic","economical"],"economical","Que ahorra dinero → <b>economical</b>."),
+ C("Prices rose ___ in 2020.",["dramatic","dramatical","dramatically"],"dramatically","Al lado de un verbo (<i>rose</i>) → <b>-ly</b>."),
+ C("a ___ space for learning",["democratic","democratical"],"democratic","<b>democratic</b> (como <i>dramatic</i>). <i>Democratical</i> no existe."),
+ G("Teachers need a lot of ___. (PATIENT)",["patience"],"Después de <i>a lot of</i> → sustantivo: <b>patience</b>."),
+ G("There was a ___ increase in rents. (SIGNIFY)",["significant"],"Al lado de <i>increase</i> → adjetivo: <b>significant</b>."),
+ F("The topic was learned meaningful.",[["meaningfully"]],[],"The topic was learned meaningfully.","Al lado de un verbo (<i>learned</i>) → adverbio: <b>meaningfully</b>."),
+ T("Las tradiciones nacionales son importantes.",[["national traditions"]],["nacional","tradicion"],"National traditions are important.","<i>-cional</i> → <b>-tional</b>: national, traditional.")]},
+{id:"r7",name:"7 · -ing o to",tip:["Después de <b>preposición</b> (without, by, about, of, from, instead of) → <b>-ing</b>","Acción al <b>principio</b> de la frase → <b>-ing</b>: <i>Living alone…</i>","<b>enjoy, avoid, keep, finish, consider</b> + -ing · <b>want, decide, manage, afford, need</b> + to","<b>make / let</b> + 1ª forma sin <i>to</i> · <b>when it comes to</b> + -ing"],items:[
+ C("I'm thinking about ___ abroad.",["study","to study","studying"],"studying","Después de <b>about</b> (preposición) → <i>-ing</i>."),
+ C("I decided ___ for the master's.",["applying","to apply"],"to apply","<b>decide</b> + <i>to</i>."),
+ C("Teachers make students ___.",["think","to think","thinking"],"think","<b>make</b> + 1ª forma, sin <i>to</i>."),
+ C("I enjoy ___ on the couch.",["to read","reading"],"reading","<b>enjoy</b> + <i>-ing</i>."),
+ G("When it comes to ___ alone, there are advantages. (live)",["living"],"Excepción: <b>when it comes to</b> + <i>-ing</i>."),
+ G("Can we keep ___? (practice)",["practicing","practising"],"<b>keep</b> + <i>-ing</i>."),
+ F("Without share an apartment, living in Barcelona is expensive.",[["without sharing"]],["without share "],"Without sharing an apartment, living in Barcelona is expensive.","<i>sin compartir</i> → preposición + <b>-ing</b>."),
+ F("I avoid to think about the costs.",[["avoid thinking"]],["avoid to"],"I avoid thinking about the costs.","<b>avoid</b> + <i>-ing</i>."),
+ F("They create jobs while also attract visitors.",[["while also attracting"]],[],"They create jobs while also attracting visitors.","<b>while</b> + <i>-ing</i>."),
+ OK("I managed to finish the essay in time.","Correcta: <b>manage</b> + <i>to</i>."),
+ T("Vivir solo tiene ventajas.",[["living alone has"]],["to live alone has"],"Living alone has advantages.","Acción al principio → <b>-ing</b>."),
+ T("Conseguí terminar el examen.",[["managed to finish"]],[],"I managed to finish the exam.","<i>conseguir</i> → <b>managed to</b> + 1ª forma.")]},
+{id:"r8",name:"8 · Palabras con pareja",tip:["Apréndelas como <b>bloque</b>: <i>impact on, related to, invest in, a rise in, consequences for, satisfied with, out of, addicted to</i>","Sin preposición: <b>attend, enjoy, affect, discuss, face, lack</b> (verbo), <b>impact</b> (verbo)"],items:[
+ G("Tourism has a big impact ___ rents.",["on"],"<b>impact on</b> (sustantivo)."),
+ G("Stress is related ___ long working hours.",["to"],"<b>related to</b>, nunca <i>with</i>."),
+ G("Cities should invest ___ culture.",["in"],"<b>invest in</b>."),
+ G("There was a sharp rise ___ rents.",["in"],"<b>a rise in</b>."),
+ G("It has serious consequences ___ society.",["for"],"<b>consequences for</b>."),
+ G("I'm satisfied ___ my progress.",["with"],"<b>satisfied with</b>."),
+ G("Many people are priced out ___ the city center.",["of"],"<b>out of</b>."),
+ C("I ___ a workshop last Saturday.",["attended to","attended"],"attended","<b>attend</b> no lleva preposición."),
+ C("Online deliveries ___ our cities.",["impact on","impact"],"impact","<i>impact</i> como <b>verbo</b> → sin <i>on</i>."),
+ F("It's easy to become addicted on social media.",[["addicted to"]],["addicted on"],"It's easy to become addicted to social media.","<b>addicted to</b>."),
+ OK("Noise affects concentration.","Correcta: <b>affect</b> sin preposición."),
+ T("Depende del contexto.",[["depends on"]],["depends of"],"It depends on the context.","<b>depend on</b>, no <i>of</i>.")]},
+{id:"r9",name:"9 · Orden de palabras",tip:["<b>also, always, never, usually</b> → delante del verbo principal; detrás de <i>is/are</i>","Pregunta <b>dentro</b> de una frase → orden normal: <i>what <b>life is</b> like</i>","¿cómo es…? → <b>what… is like</b>"],items:[
+ C("I don't know what ___ like.",["is life","life is"],"life is","Dentro de una frase → la cosa + el verbo: <b>life is</b>."),
+ C("It ___ more freedom.",["means also","also means"],"also means","<b>also</b> delante del verbo."),
+ C("It depends on how ___ organized.",["is the job","the job is"],"the job is","Dentro de una frase → <b>the job is</b>."),
+ F("We discussed how could we work together.",[["how we could"]],["how could we"],"We discussed how we could work together.","Dentro de una frase → <b>we could</b>."),
+ F("I work always alone.",[["always work"]],["work always"],"I always work alone.","<b>always</b> delante del verbo."),
+ OK("It is also important to rest.","Correcta: con <i>is</i>, <b>also</b> va detrás."),
+ T("No sé cómo es la vida en Boston.",[["what life is like","what living in boston is like","what life in boston is like"]],["how is"],"I don't know what life is like in Boston.","¿cómo es? → <b>what… is like</b>, con la cosa antes del verbo.")]},
+{id:"r10",name:"10 · Comparar",tip:["Palabra corta → <b>-er / -est</b> (<i>easier, the highest</i>); larga → <b>more / the most</b>; nunca las dos","<b>the same as</b> · <b>different from</b> · <b>as… as</b>","<b>the more…, the -er…</b>"],items:[
+ C("Shopping online is ___.",["more easy","easier","more easier"],"easier","<i>easy</i> → <b>easier</b> (sin <i>more</i>)."),
+ C("Life today isn't the same ___ before.",["than","as"],"as","<b>the same as</b>."),
+ C("Palladium had the ___ price of the three metals.",["higher","highest"],"highest","Tres o más → <b>-est</b>."),
+ G("The more we use phones, the ___ it is to concentrate. (hard)",["harder"],"<b>the more…, the harder…</b>"),
+ F("The most we read, the best we write.",[["the more we read"],["the better"]],["the most we"],"The more we read, the better we write.","<b>the more…, the better…</b>"),
+ T("Ir al cine es muy diferente de verlo en casa.",[["different from","different than"],["watching","seeing"]],["more different"],"Going to the cinema is very different from watching it at home.","<b>very different from</b> + <i>-ing</i>.")]},
+{id:"r11",name:"11 · Frases con if",tip:["Real: <b>if + presente</b>, will + 1ª","Imaginario: <b>if + 2ª forma</b>, would + 1ª","Pasado que no pasó: <b>if + had + 3ª</b>, would have + 3ª","<b>Nunca</b> <i>would</i> en la mitad del <i>if</i>"],items:[
+ C("If I ___ more time, I would read more.",["would have","had"],"had","Imaginario → <b>if + 2ª forma</b>."),
+ C("If I had known, I would ___ more.",["study","have studied"],"have studied","Pasado que no pasó → <b>would have</b> + 3ª."),
+ C("If it ___ tomorrow, we'll stay home.",["rains","will rain"],"rains","Real → <b>if + presente</b>."),
+ F("If I would have known, I would have come.",[["if i had known"]],["if i would"],"If I had known, I would have come.","Nunca <i>would</i> en la mitad del <i>if</i>: <b>If I had known</b>."),
+ T("Si hubiera tenido más tiempo, habría terminado el examen.",[["if i had had"],["would have finished"]],["would have had"],"If I had had more time, I would have finished the exam.","<b>If + had + 3ª</b>, <b>would have + 3ª</b>.")]},
+{id:"r12",name:"12 · Conectores",tip:["<b>although / even though</b> + frase (alguien + verbo)","<b>despite / in spite of</b> + cosa o -ing","<b>because</b> + frase · <b>because of</b> + cosa","Siempre <b>on</b> the other hand · <b>, which</b> para toda la idea anterior"],items:[
+ C("___ the noise, I managed to concentrate.",["Although","Despite"],"Despite","Detrás hay una cosa (<i>the noise</i>) → <b>despite</b>."),
+ C("___ it was raining, we went for a walk.",["Although","Despite"],"Although","Detrás hay una frase (<i>it was raining</i>) → <b>although</b>."),
+ C("Rents rose ___ high demand.",["because","because of"],"because of","Detrás hay una cosa → <b>because of</b>."),
+ C("___ the other hand, it is expensive.",["In","On"],"On","Siempre <b>on</b> the other hand."),
+ F("Despite it is important, few people do it.",[["although it is important","even though it is important"]],["despite it is"],"Although it is important, few people do it.","Detrás hay una frase → <b>although</b>."),
+ F("Fewer tourists visit, what affects local shops.",[["which affects"]],["what affects"],"Fewer tourists visit, which affects local shops.","Toda la idea anterior → <b>, which</b>."),
+ OK("In the end, we found a solution.","Correcta: <b>in the end</b> = finalmente."),
+ T("Aunque vivo cerca del mar, casi nunca me baño.",[["although i live","even though i live"],["hardly ever"]],["despite i"],"Although I live near the sea, I hardly ever go swimming.","<b>although</b> + frase · <i>casi nunca</i> = <b>hardly ever</b>.")]},
+{id:"r13",name:"13 · Pasiva",tip:["<b>be + 3ª forma</b>: lo importante es qué pasó, no quién lo hizo","Muchas frases con <i>se</i> → pasiva: <i>se construyó</i> = <b>was built</b>","Para decir quién: <b>by</b>"],items:[
+ C("The old bins ___ by recycling bins.",["replaced","were replaced"],"were replaced","Pasiva → <b>were replaced</b>."),
+ G("English should be ___ from primary school. (teach)",["taught"],"<b>be + 3ª forma</b>: <i>taught</i>."),
+ T("Se construyeron pisos nuevos en 2020.",[["were built"]],[],"New flats were built in 2020.","<i>se construyeron</i> → <b>were built</b>."),
+ T("La zona de servicio fue sustituida por una cafetería.",[["area"],["was replaced"]],["zone","replaced for"],"The service area was replaced by a café.","<b>was replaced by</b> · zona → <b>area</b>.")]},
+{id:"r14",name:"14 · El it que falta",tip:["<b>make / find + it + adjetivo</b>: <i>made it easier, find it hard</i>","<b>It is</b> important to…","<i>the more…, the harder <b>it</b> is</i>"],items:[
+ C("Technology has made ___ to learn.",["easier","it easier"],"it easier","<b>make + it + adjetivo</b>."),
+ C("I find ___ to concentrate at home.",["hard","it hard"],"it hard","<b>find + it + adjetivo</b>."),
+ F("The more I practice, the easier is.",[["easier it is"]],["easier is"],"The more I practice, the easier it is.","Falta el sujeto: <b>it is</b>."),
+ F("Online shops make harder for local shops to compete.",[["make it harder"]],["make harder"],"Online shops make it harder for local shops to compete.","<b>make it harder</b>."),
+ T("Es importante descansar.",[["it is important to rest","it's important to rest"]],[],"It is important to rest.","<b>It is</b> important to…")]},
+{id:"r15",name:"15 · Palabras y ortografía",tip:["Falsos amigos: <i>actual</i> → <b>current</b> · <i>zona</i> → <b>area</b> · <i>tomar una decisión</i> → <b>make</b> a decision · <i>compras</i> → <b>purchases</b>","Ortografía: <b>especially, conscious, individualistic, outweigh, coffee, behavior</b>"],items:[
+ G("el diseño actual → the ___ design",["current"],"<i>actual</i> (inglés) = real. <i>Actual</i> (español) = <b>current</b>."),
+ G("We need to ___ a decision.",["make"],"<b>make</b> a decision / a mistake / a plan."),
+ G("compras online → online ___",["purchases","shopping"],"<b>purchases</b> (sustantivo). <i>Bought</i> es solo verbo."),
+ G("Spell it correctly: espetially",["especially"],"e-s-p-e-c-i-a-l-l-y"),
+ G("Spell it correctly: consious",["conscious"],"c-o-n-s-c-i-o-u-s"),
+ G("Spell it correctly: individuallistic",["individualistic"],"individual + istic: una sola l."),
+ G("Spell it correctly: outweight",["outweigh"],"out + weigh (sin t)."),
+ G("Spell it correctly (American): behaviour",["behavior"],"Inglés americano: sin <i>u</i>."),
+ G("Spell it correctly: coffe",["coffee"],"c-o-f-f-e-e")]}
+];
+RULES.push(
+{id:"r16",name:"16 · Sinónimos",tip:["Escribe <b>una palabra o expresión</b> que signifique lo mismo y que puedas usar en el ensayo.","No hace falta una palabra rara: <i>children → young people</i> funciona mejor que <i>offspring</i>.","Hay varias respuestas válidas: la página acepta las más habituales."],items:[
+ G("important (in an essay) → ___",["significant","crucial","essential","vital","key","major"],"<b>significant, crucial, essential, vital, key</b>. Evita repetir <i>important</i>."),
+ G("a lot of people → ___ people",["many","numerous","a large number of","a great number of","a growing number of"],"<b>many / numerous / a large number of</b> people."),
+ G("to increase → to ___",["rise","grow","go up","climb","soar"],"<b>rise, grow, go up, climb</b>."),
+ G("to decrease → to ___",["fall","drop","decline","go down","fall down"],"<b>fall, drop, decline, go down</b>."),
+ G("a problem → an ___",["issue"],"<b>an issue</b> (también: <i>a challenge, a difficulty</i>)."),
+ G("big (formal) → ___",["considerable","significant","substantial","large","major"],"<b>considerable, significant, substantial</b>."),
+ G("The graph shows… → The graph ___…",["illustrates","depicts","compares","presents","displays","gives information about"],"<b>illustrates, depicts, compares, presents</b>."),
+ G("People think that… → People ___ that…",["argue","believe","consider","claim","feel","maintain"],"<b>argue, believe, claim, maintain</b>."),
+ G("children → ___",["young people","youngsters","kids","minors","young children"],"<b>young people</b> es la opción más segura en un ensayo."),
+ G("a good effect → a ___ effect",["positive","beneficial"],"<b>positive, beneficial</b>."),
+ G("a bad effect → a ___ effect",["negative","harmful","detrimental","damaging"],"<b>negative, harmful, detrimental</b>."),
+ G("to help → to ___",["assist","support","aid"],"<b>assist, support</b>."),
+ G("to get a scholarship → to ___ a scholarship",["receive","be awarded","win","obtain","earn"],"<b>be awarded, receive, win</b>."),
+ G("nowadays → ___",["today","these days","currently","at present","in recent years","in today's world"],"<b>today, these days, currently, at present</b>."),
+ G("because of → ___",["due to","owing to","as a result of"],"<b>due to, owing to, as a result of</b>."),
+ G("Also, … (at the start of a sentence) → ___, …",["moreover","furthermore","in addition","additionally","what is more","what's more"],"<b>Moreover, Furthermore, In addition</b>."),
+ G("But… (at the start of a sentence) → ___, …",["however","nevertheless","nonetheless","on the other hand"],"<b>However, Nevertheless</b>."),
+ G("So… (at the start of a sentence) → ___, …",["therefore","consequently","as a result","thus","for this reason"],"<b>Therefore, Consequently, As a result</b>."),
+ G("for example → ___",["for instance","such as"],"<b>for instance</b> (o <i>such as</i> antes de una lista)."),
+ G("to depend on → to ___ on",["rely"],"<b>rely on</b>.")]},
+{id:"r17",name:"17 · Cambiar la forma",tip:["Cambia un <b>verbo</b> por un <b>sustantivo</b> (o al revés) y la estructura cambia sola.","<i>Prices increased sharply</i> → <i>There was a sharp <b>increase</b> in prices</i>.","Al cambiar a sustantivo, revisa la <b>pareja</b>: <i>an impact <b>on</b></i>, <i>a rise <b>in</b></i>."],items:[
+ G("Tourism affects local communities. → Tourism has an ___ on local communities.",["impact","effect","influence"],"verbo <i>affect</i> → sustantivo <b>impact / effect</b> + <i>on</i>."),
+ G("Prices increased sharply. → There was a sharp ___ in prices.",["increase","rise"],"verbo → sustantivo: <b>a sharp increase in</b>."),
+ G("Many people choose to live alone. → Living alone is a popular ___.",["choice","option"],"<i>choose</i> → <b>choice</b>."),
+ G("Governments should invest in transport. → Governments should increase ___ in transport.",["investment"],"<i>invest</i> → <b>investment</b>."),
+ G("Technology develops quickly. → The ___ of technology is fast.",["development"],"<i>develop</i> → <b>development</b>."),
+ G("Children benefit from music. → Music is ___ for children.",["beneficial","good"],"<i>benefit</i> → adjetivo <b>beneficial</b>."),
+ G("Cities grew rapidly. → There was ___ growth in cities.",["rapid","fast"],"adverbio <i>rapidly</i> → adjetivo <b>rapid</b> (al lado de <i>growth</i>)."),
+ G("Working from home is more and more popular. → Working from home is gaining ___.",["popularity"],"<i>popular</i> → <b>popularity</b>."),
+ G("People rely on cars. → People's ___ on cars is a problem.",["reliance","dependence"],"<i>rely</i> → <b>reliance</b>."),
+ G("Rents rose dramatically. → There was a ___ rise in rents.",["dramatic","sharp","significant"],"adverbio → adjetivo: <b>a dramatic rise</b>."),
+ G("Many students fail. → The ___ rate is high.",["failure"],"<i>fail</i> → <b>failure</b>."),
+ G("Young people are less active. → Young people's ___ levels are lower.",["activity"],"<i>active</i> → <b>activity</b>.")]},
+{id:"r18",name:"18 · Transformaciones",tip:["Como en el CAE: usa la <b>palabra clave</b> y escribe la parte que falta para que signifique lo mismo.","Es la técnica perfecta para parafrasear la pregunta en la introducción."],items:[
+ G("People believe that children spend too much time online. (BELIEVED) → It ___ that children spend too much time online.",["is believed","is commonly believed","is widely believed","is often believed","is generally believed"],"<b>It is (widely) believed that…</b>"),
+ G("Online shopping is replacing traditional shops. (REPLACED) → Traditional shops ___ by online shopping.",["are being replaced","are replaced"],"Pasiva: <b>are being replaced by</b>."),
+ G("Working from home is becoming more popular. (POPULARITY) → Working from home ___ popularity.",["is gaining","is increasing in","is growing in"],"<b>is gaining popularity</b>."),
+ G("Governments should spend more on public transport than on roads. (PRIORITIZE) → Governments should ___ over roads.",["prioritize public transport","prioritize investment in public transport","prioritize spending on public transport","prioritise public transport"],"<b>prioritize X over Y</b>."),
+ G("The disadvantages are greater than the advantages. (OUTWEIGH) → The disadvantages ___.",["outweigh the advantages"],"<b>outweigh the advantages</b>."),
+ G("Many people think that tourism brings more problems. (ARGUED) → It is often ___ tourism brings more problems.",["argued that"],"<b>It is often argued that…</b>"),
+ G("Rents have increased a lot in recent years. (SIGNIFICANT) → There has been ___ in rents in recent years.",["a significant increase","a significant rise"],"<b>a significant increase in</b>."),
+ G("Teachers should adapt lessons to each student. (TAILOR) → Teachers should ___ to each student.",["tailor lessons","tailor their lessons","tailor teaching","tailor their teaching"],"<b>tailor lessons to</b> = adaptar a medida."),
+ G("Living alone is not as cheap as sharing. (EXPENSIVE) → Living alone is ___ sharing.",["more expensive than"],"<b>more expensive than</b>."),
+ G("Children should start learning languages at primary school. (TAUGHT) → Languages should ___ from primary school.",["be taught"],"Pasiva: <b>should be taught</b>."),
+ G("I spend too much time on my phone. (AMOUNT) → The ___ I spend on my phone is too much.",["amount of time"],"<b>the amount of time</b>."),
+ G("More people are choosing to live alone. (GROWING) → A ___ people are choosing to live alone.",["growing number of"],"<b>A growing number of</b> people.")]},
+{id:"r19",name:"19 · Parafrasear la pregunta",tip:["Cambia <b>2–3 cosas</b> y mantén <b>exactamente el mismo significado</b>.","Técnicas: un <b>marco</b> (<i>It is often argued that…</i>), <b>sinónimos</b>, <b>cambiar la forma</b> (verbo → sustantivo) y <b>cambiar la estructura</b> (empezar con -ing, pasiva).","Mantén los términos que no tienen sinónimo real (<i>tourism, smartphones, university</i>).","Aquí te corriges tú: compara con los modelos y decide si está bien."],items:[
+ P("Many people believe that university education should be free for everyone.",["It is widely argued that higher education should be available to all at no cost.","Some people believe that studying at university should not cost students anything."]),
+ P("In many countries, the number of people who work from home is increasing.",["Working from home is gaining popularity in many countries.","A growing number of people in many parts of the world are choosing to work remotely."]),
+ P("Some people think that children should spend more time playing outdoors.",["It is often argued that young people should be encouraged to play outside more.","According to some, children ought to spend a greater amount of time playing outside."]),
+ P("Tourism brings more problems than benefits to local communities.",["Some people believe that, when it comes to tourism, the drawbacks for local communities outweigh the advantages."]),
+ P("Many young people today spend too much time on social media.",["It is commonly believed that the amount of time young people spend on social media is excessive."]),
+ P("Governments should spend more money on public transport than on building new roads.",["It is often argued that the authorities should prioritize investment in public transport over building new roads."]),
+ P("More and more people are choosing to live alone.",["Living alone is becoming an increasingly popular choice.","A growing number of people now prefer to live on their own."]),
+ P("Some people say that technology has made our lives more complicated.",["It is sometimes argued that technological advances have made everyday life more complex."]),
+ P("Many people prefer to buy things online rather than in shops.",["Online shopping is increasingly preferred to buying from physical stores.","A large number of people now choose to shop online instead of in stores."]),
+ P("Some people believe that famous people have a responsibility to be good role models.",["It is often argued that celebrities should set a good example for others."]),
+ P("The line graph shows the average price of three metals between 2013 and 2021.",["The line graph illustrates how the average prices of three metals changed over the period from 2013 to 2021."]),
+ P("The table shows how much time people aged 18 to 30 spent on four leisure activities.",["The table compares the amount of time that young adults aged 18 to 30 devoted to four leisure activities."])]},{id:"r20",name:"20 · Palabras del tema",tip:["Cada tema del Task 2 tiene <b>3–4 formas de nombrarlo</b>. Apréndelas en grupo: así no repites la palabra de la pregunta.","<i>the internet</i> → <b>the digital age, online, the web</b> · <i>children</i> → <b>young people, the younger generation</b>","Cuidado: el sinónimo tiene que referirse <b>al mismo grupo o cosa</b> (<i>children ≠ teenagers</i>)."],items:[
+ G("the internet → ___ (la época)",["the digital age","the information age","the internet age","the digital era"],"<b>the digital age</b> / <b>the information age</b>. Ej.: <i>Libraries have become obsolete in the digital age.</i>"),
+ G("on the internet → ___ (una palabra)",["online"],"<b>online</b>. Ej.: <i>Many people now shop online.</i>"),
+ G("children → ___ (dos palabras)",["young people","the young","young children","the youth"],"<b>young people</b> / <b>the younger generation</b> (pero ojo: <i>young people</i> incluye adolescentes)."),
+ G("children (en general, como grupo) → the younger ___",["generation","generations"],"<b>the younger generation</b>."),
+ G("old people → ___ (respetuoso)",["the elderly","older people","older adults","senior citizens","elderly people","the older generation","seniors"],"<b>the elderly / older adults / senior citizens</b>. Evita <i>old people</i> en un ensayo."),
+ G("the government → the ___",["authorities","state","public sector","government"],"<b>the authorities / the state</b>. Ej.: <i>The authorities should invest in public transport.</i>"),
+ G("the government (que paga con dinero público) → ___ money",["public","taxpayers'","taxpayers","state"],"<b>public money / taxpayers' money</b>."),
+ G("companies → ___",["businesses","firms","employers","corporations","organizations","companies"],"<b>businesses / firms / employers</b>."),
+ G("workers → ___",["employees","staff","the workforce","workforce","employees","personnel"],"<b>employees / staff / the workforce</b>."),
+ G("cities → ___ areas",["urban"],"<b>urban areas</b>."),
+ G("the countryside → ___ areas",["rural"],"<b>rural areas</b>."),
+ G("big cities → ___ (una palabra, muy usada en Task 2)",["metropolises","megacities","cities"],"<b>large cities / urban centers / metropolises</b>."),
+ G("cars → private ___",["vehicles","transport","cars","transportation"],"<b>private vehicles</b> / <b>private transport</b>."),
+ G("buses and trains → ___ transport",["public","mass"],"<b>public transport</b> (en EE. UU. también <i>public transportation</i>)."),
+ G("pollution / the environment → ___ damage",["environmental"],"<b>environmental damage</b> (cambio de forma: environment → environmental)."),
+ G("famous people → ___",["celebrities","public figures","well-known people","stars"],"<b>celebrities / public figures</b>."),
+ G("advertising → ___ (en plural)",["advertisements","adverts","ads","commercials"],"<b>advertisements / ads / commercials</b>. Y la industria: <i>the advertising industry</i>."),
+ G("mobile phones → ___",["smartphones","cell phones","cellphones","mobile devices","devices"],"<b>smartphones / mobile devices</b> (americano: <i>cell phones</i>)."),
+ G("working from home → working ___",["remotely"],"<b>working remotely</b> / <b>remote work</b>."),
+ G("doing sport → ___ (una palabra)",["exercise","exercising"],"<b>exercise</b> / <b>physical activity</b>."),
+ G("university → ___ education",["higher","tertiary","university"],"<b>higher education</b> / <b>tertiary education</b>."),
+ G("criminals → ___",["offenders","lawbreakers"],"<b>offenders</b>. Y la cárcel: <i>prison → custodial sentences</i>."),
+ G("tourists → ___",["visitors","travelers","travellers","holidaymakers","vacationers","sightseers"],"<b>visitors / travelers</b>."),
+ G("poor people → ___ people (renta baja)",["low-income","low income","disadvantaged","underprivileged"],"<b>low-income</b> / <b>disadvantaged</b> people / families."),
+ G("money (de una persona) → personal ___",["finances","finance","savings"],"<b>personal finances</b>. Ej.: <i>Schools should teach students to manage their finances.</i>"),
+ G("fast food → ___ food",["junk","processed","unhealthy"],"<b>junk food / processed food</b>."),
+ T("Cambia «the internet»: Many people get their news from the internet.",[["online","digital","the web","websites","social media"]],["from the internet"],"Many people get their news online.","<b>online</b> / <b>from digital sources</b>."),
+ T("Cambia «old people»: Old people often feel lonely.",[["the elderly","older people","older adults","senior citizens","elderly people","seniors"]],["old people"],"Older adults often feel lonely.","<b>the elderly / older adults</b>."),
+ T("Cambia «companies» y «workers»: Companies should let workers work from home.",[["businesses","firms","employers","organizations"],["employees","staff"],["remotely","from home"]],["companies","workers"],"Employers should allow their staff to work remotely.","<b>employers… staff… remotely</b>."),
+ T("Cambia «cities» y «the countryside»: People are moving from the countryside to cities.",[["rural"],["urban"]],["the countryside","to cities"],"People are moving from rural areas to urban areas.","<b>rural areas → urban areas</b> (o <i>relocating to urban centers</i>)."),
+ T("Cambia «famous people»: Famous people should be good role models.",[["celebrities","public figures","well-known people","stars"]],["famous people"],"Celebrities should set a good example.","<b>celebrities / public figures</b>; y <i>be good role models → set a good example</i>."),
+ T("Cambia «the government»: The government should spend more on hospitals.",[["the authorities","the state","public money","governments","policymakers"]],[],"The authorities should invest more in healthcare.","<b>the authorities</b>; extra: <i>hospitals → healthcare</i>."),
+ T("Cambia «doing sport»: Doing sport is good for children.",[["exercise","physical activity","exercising"],["young people","the young","the younger generation","young children","youngsters"]],["doing sport"],"Physical activity is beneficial for young people.","<b>physical activity / exercise</b>; <b>good for → beneficial for</b>.")]}
+
+);
+
+const EXTRA={
+r1:[
+ C("My students have ___ a lot this year. (grow)",["grow","grew","grown"],"grown","<b>have</b> → 3ª forma: grow – grew – <b>grown</b>."),
+ C("When I was a child, I ___ the piano every day.",["practice","practiced","have practiced"],"practiced","Pasado terminado (<i>when I was a child</i>) → 2ª forma."),
+ C("Tourism has ___ a serious problem for residents.",["become","became","becomed"],"become","<b>has</b> → 3ª forma: <b>become</b>."),
+ G("She didn't ___ the email. (send)",["send"],"<b>didn't</b> + 1ª forma."),
+ G("The museum was ___ in 1992. (build)",["built"],"<b>be</b> + 3ª forma: build – built – <b>built</b>."),
+ G("Many families have ___ the city center. (leave)",["left"],"<b>have</b> + 3ª forma: leave – left – <b>left</b>."),
+ G("I can't ___ how fast prices rose. (believe)",["believe"],"<b>can't</b> + 1ª forma."),
+ F("The festival has brang a lot of visitors.",[["has brought"]],["brang"],"The festival has brought a lot of visitors.","bring – brought – <b>brought</b>."),
+ F("I didn't went to the meeting.",[["didn't go","did not go"]],["didn't went","did not went"],"I didn't go to the meeting.","<b>didn't</b> ya marca el pasado → <i>go</i>."),
+ OK("The government has chosen a new plan.","Correcta: choose – chose – <b>chosen</b>."),
+ T("Mi hermano se ha vuelto muy responsable.",[["has become"]],["has became"],"My brother has become very responsible.","<b>has become</b>."),
+ T("No pensé en las consecuencias.",[["didn't think","did not think"],["about the consequences","of the consequences"]],["didn't thought"],"I didn't think about the consequences.","<b>didn't think</b> · think <b>about</b>.")],
+r2:[
+ C("I ___ in Barcelona since 2015.",["live","have lived","lived"],"have lived","<b>since</b> → present perfect."),
+ C("Three years ago, she ___ a new job.",["has started","started"],"started","<b>ago</b> → pasado simple."),
+ C("Right now, more and more people ___ from home.",["work","are working"],"are working","Ahora / tendencia → <b>present continuous</b>."),
+ C("I ___ play football when I was young, but I stopped.",["usually","used to"],"used to","Pasado que ya no haces → <b>used to</b>."),
+ C("If prices keep rising, many people ___ the city.",["leave","will leave"],"will leave","Futuro real: <i>if</i> + presente, <b>will</b> + 1ª."),
+ G("We will start as soon as everyone ___ here. (be)",["is"],"<b>as soon as</b> + presente (como <i>when</i>)."),
+ F("In 2010, the number of cars has increased sharply.",[["increased sharply"]],["has increased"],"In 2010, the number of cars increased sharply.","Fecha terminada (<i>in 2010</i>) → pasado simple."),
+ F("I will tell you when I will know the results.",[["when i know"]],["when i will"],"I will tell you when I know the results.","<b>when</b> + presente."),
+ OK("Prices have risen steadily over the last decade.","Correcta: <i>over the last decade</i> llega hasta hoy → present perfect."),
+ T("He trabajado en una escuela de música durante seis años.",[["have worked","have been working"],["for six years"]],["since six years","during six years"],"I have worked at a music school for six years.","<b>for</b> + periodo hasta hoy → present perfect."),
+ T("Antes vivía en Barcelona, pero ahora vivo en Girona.",[["used to live"],["i live","i now live"],["now"]],["i used to live in girona"],"I used to live in Barcelona, but now I live in Girona.","<b>used to</b> = pasado · ahora → presente.")],
+r3:[
+ C("The government ___ to build more houses.",["plan","plans"],"plans","<i>The government</i> = uno → <b>plans</b>."),
+ C("Many students ___ part-time jobs.",["have","has"],"have","<i>Many students</i> = varios → <b>have</b>."),
+ C("Each school ___ its own rules.",["have","has"],"has","<i>Each</i> = uno → <b>has</b>."),
+ C("The price of houses in big cities ___ risen sharply.",["have","has"],"has","Tapa <i>of houses in big cities</i>: <b>the price</b> = uno."),
+ C("Reading every day ___ you write better.",["help","helps"],"helps","Una acción con -ing como sujeto = uno → <b>helps</b>."),
+ F("Young people spends too much time online.",[["young people spend"]],["people spends"],"Young people spend too much time online.","<i>People</i> = varios."),
+ F("Everybody want to live near the beach.",[["everybody wants"]],[],"Everybody wants to live near the beach.","<i>Everybody</i> = uno → <b>wants</b>."),
+ F("The level of pollution in cities are worrying.",[["cities is"]],["cities are"],"The level of pollution in cities is worrying.","Tapa el medio: <b>the level</b> = uno."),
+ OK("The children in my class love music.","Correcta: <i>children</i> = varios → <b>love</b>."),
+ T("Cada alumno aprende a su propio ritmo.",[["learns"],["own pace"]],["learn at"],"Each student learns at their own pace.","<i>Each</i> = uno → <b>learns</b>."),
+ T("El número de turistas aumenta cada año.",[["the number of tourists increases","the number of tourists rises","the number of tourists grows"]],[],"The number of tourists increases every year.","<i>The number</i> = uno → <b>increases</b>.")],
+r4:[
+ C("We need more ___ about the project.",["information","informations"],"information","<b>information</b>: incontable."),
+ C("There were ___ people at the concert than last year.",["less","fewer"],"fewer","Las personas se cuentan → <b>fewer</b>."),
+ C("How ___ money do you spend on rent?",["many","much"],"much","<i>Money</i> no se cuenta → <b>much</b>."),
+ C("The ___ of students in my class is 25.",["amount","number"],"number","Los estudiantes se cuentan → <b>number</b>."),
+ C("She has two ___.",["childs","children"],"children","child → <b>children</b>."),
+ G("My teacher gave me useful ___ on my essay. (comentarios / consejos)",["advice","feedback"],"<b>advice</b> y <b>feedback</b>: incontables, sin -s."),
+ F("The school bought new equipments for the music room.",[["new equipment"]],["equipments"],"The school bought new equipment for the music room.","<b>equipment</b>: incontable."),
+ F("There are less cars in the city center now.",[["fewer cars"]],["less cars"],"There are fewer cars in the city center now.","Los coches se cuentan → <b>fewer</b>."),
+ OK("We spend less time outdoors than our parents did.","Correcta: <i>time</i> no se cuenta → <b>less</b>."),
+ T("Hay mucho tráfico en el centro.",[["a lot of traffic","much traffic","heavy traffic","lots of traffic"]],["traffics","many traffic"],"There is a lot of traffic downtown.","<b>traffic</b>: incontable."),
+ T("Han hecho mucha investigación sobre este tema.",[["research"]],["researches"],"They have done a lot of research on this topic.","<b>research</b>: incontable.")],
+r5:[
+ C("___ education should be free for everyone.",["The","(nada)"],"(nada)","En general → sin <i>the</i>."),
+ C("___ environment is changing quickly.",["The","(nada)"],"The","<b>The environment</b>: único."),
+ C("She is ___ teacher at a secondary school.",["a","the","(nada)"],"a","Profesión → <b>a</b> teacher."),
+ C("I go to ___ work by motorbike.",["the","(nada)"],"(nada)","Expresión fija: <b>go to work</b>."),
+ F("The tourism has changed Barcelona.",[["tourism has changed"]],["the tourism"],"Tourism has changed Barcelona.","En general → sin <i>the</i>."),
+ F("I would like to study in United States.",[["the united states"]],["in united states"],"I would like to study in the United States.","<i>States</i> → <b>the</b>."),
+ F("Barcelona's the beaches are crowded.",[["barcelona's beaches"]],["'s the"],"Barcelona's beaches are crowded.","Posesivo → sin <i>the</i>."),
+ OK("The weather in Boston is very cold in winter.","Correcta: <i>the weather</i> (concreto)."),
+ T("Los jóvenes necesitan espacios para jugar.",[["young people need"]],["the young people"],"Young people need spaces to play.","En general → sin <i>the</i>."),
+ T("Soy profesora de música.",[["i am a music teacher","i'm a music teacher"]],[],"I am a music teacher.","Profesión → <b>a</b>.")],
+r6:[
+ C("There was a ___ difference between the two cities.",["considerable","considerably"],"considerable","Al lado de <i>difference</i> (sustantivo) → adjetivo."),
+ C("The number of cars fell ___.",["sharp","sharply"],"sharply","Al lado de <i>fell</i> (verbo) → <b>-ly</b>."),
+ C("Music has a positive ___ on children.",["effective","effect","effectively"],"effect","Después de <i>a positive</i> → sustantivo: <b>effect</b>."),
+ C("It's ___ important to rest.",["extreme","extremely"],"extremely","Describe un adjetivo (<i>important</i>) → <b>-ly</b>."),
+ C("She is very ___ of the risks.",["aware","awareness"],"aware","<i>be</i> + adjetivo: <b>aware</b>."),
+ G("Online learning offers more ___. (FLEXIBLE)",["flexibility"],"Después de <i>more</i> → sustantivo: <b>flexibility</b>."),
+ G("The project was a big ___. (SUCCEED)",["success"],"<i>a big</i> + sustantivo: <b>success</b>."),
+ G("Prices increased ___ in 2021. (STEADY)",["steadily"],"Al lado de un verbo → <b>-ly</b> (y → i)."),
+ F("There was a significantly rise in rents.",[["a significant rise"]],["significantly rise"],"There was a significant rise in rents.","Al lado de <i>rise</i> (sustantivo) → adjetivo."),
+ OK("The economic situation improved gradually.","Correcta: <b>economic</b> + <b>gradually</b>."),
+ T("Es una solución económica (barata).",[["economical"]],["economic solution"],"It's an economical solution.","Barato → <b>economical</b>.")],
+r7:[
+ C("Thank you for ___ me.",["help","to help","helping"],"helping","Después de <i>for</i> (preposición) → <b>-ing</b>."),
+ C("I can't afford ___ downtown.",["living","to live"],"to live","<b>afford</b> + to."),
+ C("She suggested ___ the meeting.",["to postpone","postponing"],"postponing","<b>suggest</b> + -ing."),
+ C("Let the students ___ the song.",["choose","to choose","choosing"],"choose","<b>let</b> + 1ª forma, sin <i>to</i>."),
+ C("Instead of ___ by car, take the train.",["go","going","to go"],"going","<b>instead of</b> + -ing."),
+ C("I look forward to ___ you in Boston.",["see","seeing"],"seeing","Excepción: <b>look forward to</b> + -ing."),
+ G("I want ___ abroad next year. (study)",["to study"],"<b>want</b> + to."),
+ G("She finished ___ her essay at midnight. (write)",["writing"],"<b>finish</b> + -ing."),
+ F("I'm interested in learn photography.",[["interested in learning"]],[],"I'm interested in learning photography.","Preposición (<i>in</i>) + <b>-ing</b>."),
+ F("Teachers let students to choose their instruments.",[["let students choose"]],["to choose"],"Teachers let students choose their instruments.","<b>let</b> + 1ª forma, sin <i>to</i>."),
+ OK("By practicing every day, she improved quickly.","Correcta: <b>by</b> + -ing."),
+ T("Antes de empezar el ensayo, haz un plan.",[["before starting","before you start","before beginning","before writing"]],[],"Before starting the essay, make a plan.","<b>before</b> + -ing."),
+ T("Evita usar el móvil antes de dormir.",[["avoid using"]],["avoid to use"],"Avoid using your phone before going to bed.","<b>avoid</b> + -ing.")],
+r8:[
+ G("The price depends ___ the season.",["on"],"<b>depend on</b>."),
+ G("This is similar ___ what happened in Menorca.",["to"],"<b>similar to</b>."),
+ G("The problem stems ___ a lack of housing.",["from"],"<b>stem from</b>."),
+ G("Students benefit ___ music lessons.",["from"],"<b>benefit from</b>."),
+ G("He is responsible ___ the budget.",["for"],"<b>responsible for</b>."),
+ G("I'm afraid ___ heights.",["of"],"<b>afraid of</b>."),
+ C("We ___ the problem at the meeting.",["discussed about","discussed"],"discussed","<b>discuss</b> sin preposición."),
+ C("The characters ___ difficult situations.",["face with","face"],"face","<b>face</b> sin preposición."),
+ C("There was a decrease ___ unemployment.",["of","in"],"in","<b>a decrease in</b>."),
+ F("Many people rely of public transport.",[["rely on"]],["rely of"],"Many people rely on public transport.","<b>rely on</b>."),
+ F("Living alone has a big effect in mental health.",[["effect on"]],["effect in"],"Living alone has a big effect on mental health.","<b>effect on</b> (como <i>impact on</i>)."),
+ OK("Smartphones affect young people's sleep.","Correcta: <b>affect</b> sin preposición."),
+ T("Estoy interesada en el diseño del aprendizaje.",[["interested in"]],["interested on"],"I'm interested in learning design.","<b>interested in</b>."),
+ T("La gente se queja del ruido.",[["complain about","complain of"]],["complain for"],"People complain about the noise.","<b>complain about</b>.")],
+r9:[
+ C("Can you tell me where ___?",["is the station","the station is"],"the station is","Dentro de una frase → orden normal."),
+ C("She ___ late for class.",["is never","never is"],"is never","Con <i>is</i> → <b>never</b> detrás."),
+ C("___ to the beach on Sundays.",["We often go","We go often"],"We often go","<b>often</b> delante del verbo."),
+ C("I wonder why ___ so expensive.",["is Boston","Boston is"],"Boston is","Dentro de una frase → <b>Boston is</b>."),
+ F("I don't remember where did I put my keys.",[["where i put"]],["where did i"],"I don't remember where I put my keys.","Dentro de una frase → orden normal, sin <i>did</i>."),
+ F("She speaks very well English.",[["speaks english very well"]],["very well english"],"She speaks English very well.","El objeto (<i>English</i>) va justo detrás del verbo."),
+ F("There is located a park near my house.",[["there is a park"]],["is located a"],"There is a park near my house.","<b>there is</b> + cosa."),
+ OK("Do you know what time the exam starts?","Correcta: dentro de una frase → <i>the exam starts</i> (sin <i>does</i>)."),
+ T("¿Sabes cómo es Nueva York?",[["what new york is like"]],["how is new york"],"Do you know what New York is like?","<b>what… is like</b>."),
+ T("Nunca bebo café por la noche.",[["never drink coffee"]],["drink never"],"I never drink coffee at night.","<b>never</b> delante del verbo.")],
+r10:[
+ C("Rents in Barcelona are ___ than in Girona.",["more high","higher"],"higher","high → <b>higher</b>."),
+ C("This is the ___ essay I have written.",["better","best"],"best","El mejor de todos → <b>best</b>."),
+ C("My new laptop is ___ powerful than the old one.",["more","most"],"more","Comparar dos → <b>more</b>."),
+ C("The exam was not as difficult ___ I expected.",["than","as"],"as","<b>as… as</b>."),
+ C("The older you get, the ___ it is to learn a language.",["hard","harder","hardest"],"harder","<b>the more…, the -er…</b>"),
+ G("Boston is much ___ than Barcelona in winter. (cold)",["colder"],"cold → <b>colder</b>."),
+ F("Living in the city is more cheaper than I thought.",[["cheaper than"]],["more cheaper"],"Living in the city is cheaper than I thought.","<i>cheaper</i> ya significa «más barato»."),
+ F("This year's results are similar than last year's.",[["similar to"]],["similar than"],"This year's results are similar to last year's.","<b>similar to</b>."),
+ OK("Speaking is harder for me than reading.","Correcta: hard → <b>harder than</b>."),
+ T("Cuanto más practicas, más fácil es.",[["the more you practice","the more you practise"],["the easier it is","the easier it gets","the easier it becomes"]],[],"The more you practice, the easier it is.","<b>the more…, the easier it is</b>.")],
+r11:[
+ C("If I ___ you, I would book the exam soon.",["were","would be"],"were","Imaginario: <b>if I were you</b>."),
+ C("If we don't book now, there ___ no places left.",["will be","would be"],"will be","Real → <b>will</b>."),
+ C("If she ___ earlier, she would have caught the train.",["left","had left"],"had left","Pasado que no pasó → <b>had</b> + 3ª."),
+ G("If I had more money, I ___ travel more. (would / will)",["would"],"Imaginario → <b>would</b>."),
+ F("If I will pass the exam, I will celebrate.",[["if i pass"]],["if i will"],"If I pass the exam, I will celebrate.","<b>if</b> + presente."),
+ F("If they would invest in culture, cities would be better.",[["if they invested"]],["if they would"],"If they invested in culture, cities would be better.","<i>if</i> + 2ª forma; nunca <i>would</i> en el <i>if</i>."),
+ OK("If I had studied more, I would have passed.","Correcta: <b>had</b> + 3ª / <b>would have</b> + 3ª."),
+ T("Si tuviera tiempo, aprendería a tocar el saxo.",[["if i had time","if i had more time"],["would learn"]],["if i would"],"If I had time, I would learn to play the saxophone.","<b>if</b> + 2ª, <b>would</b> + 1ª."),
+ T("Si llueve mañana, nos quedaremos en casa.",[["if it rains"],["will stay","'ll stay"]],["will rain"],"If it rains tomorrow, we will stay home.","Real: <b>if</b> + presente, <b>will</b>.")],
+r12:[
+ C("___ being tired, she finished the essay.",["Although","Despite"],"Despite","<b>despite</b> + -ing."),
+ C("___ she was tired, she finished the essay.",["Although","Despite"],"Although","<b>although</b> + frase."),
+ C("The event was canceled ___ the rain.",["because","because of"],"because of","<b>because of</b> + cosa."),
+ C("Cities offer culture, ___ villages offer nature.",["whereas","despite"],"whereas","Contraste entre dos frases → <b>whereas</b>."),
+ C("Rents are rising, ___ affects young people.",["what","which"],"which","Toda la idea anterior → <b>which</b>."),
+ F("Even though it was expensive, but we bought it.",[["we bought it"]],["but we"],"Even though it was expensive, we bought it.","<i>even though</i> o <i>but</i>, nunca los dos."),
+ F("In spite the rain, we went out.",[["in spite of the rain","despite the rain"]],["in spite the"],"In spite of the rain, we went out.","<b>in spite of</b> (con <i>of</i>) / <b>despite</b> (sin <i>of</i>)."),
+ F("At the end, we decided to stay.",[["in the end"]],["at the end"],"In the end, we decided to stay.","Finalmente → <b>in the end</b>."),
+ OK("Due to high demand, prices rose.","Correcta: <b>due to</b> + cosa."),
+ T("A pesar de vivir lejos, llega puntual.",[["despite living","in spite of living","although she lives","although he lives","even though she lives","even though he lives"]],[],"Despite living far away, she arrives on time.","<b>despite</b> + -ing (o <b>although</b> + frase)."),
+ T("Por un lado es barato; por otro lado, es lento.",[["on the one hand"],["on the other hand"]],["in the other"],"On the one hand, it is cheap; on the other hand, it is slow.","<b>on</b>… <b>on</b>.")],
+r13:[
+ C("English ___ all over the world.",["speaks","is spoken"],"is spoken","Pasiva: <b>be + 3ª</b>."),
+ C("The new library ___ next year.",["will build","will be built"],"will be built","Futuro pasivo: <b>will be + 3ª</b>."),
+ G("The results were ___ last Friday. (publish)",["published"],"<b>be + 3ª</b>."),
+ G("A new bike lane has been ___. (add)",["added"],"<b>has been + 3ª</b>."),
+ F("The concert was cancel because of the rain.",[["was cancelled","was canceled"]],[],"The concert was canceled because of the rain.","<b>be + 3ª</b>: canceled."),
+ F("The old factory has been convert into a museum.",[["been converted"]],[],"The old factory has been converted into a museum.","<b>been + 3ª</b>."),
+ OK("Many trees were planted in the park.","Correcta: pasiva."),
+ T("Se cerraron muchas tiendas durante la crisis.",[["were closed","closed down"]],[],"Many shops were closed during the crisis.","<i>se cerraron</i> → <b>were closed</b>."),
+ T("El parque fue sustituido por un aparcamiento.",[["was replaced by","was replaced with"],["parking lot","car park"]],["replaced for"],"The park was replaced by a parking lot.","<b>was replaced by</b> · <b>parking lot</b>.")],
+r14:[
+ C("Online tools make ___ for teachers to share materials.",["easy","it easy"],"it easy","<b>make + it + adjetivo</b>."),
+ C("___ is difficult to find a flat in Barcelona.",["(nada)","It"],"It","Sujeto «falso»: <b>It</b> is difficult…"),
+ C("I found ___ to follow the instructions.",["difficult","it difficult"],"it difficult","<b>find + it + adjetivo</b>."),
+ F("Is important to sleep well before the exam.",[["it is important","it's important"]],[],"It is important to sleep well before the exam.","Falta <b>it</b> al principio."),
+ F("Technology makes possible to work from anywhere.",[["makes it possible"]],["makes possible"],"Technology makes it possible to work from anywhere.","<b>make it possible</b>."),
+ OK("It is not easy to learn a language as an adult.","Correcta: <b>it is</b>."),
+ T("Me resulta difícil levantarme pronto. (Usa «find».)",[["i find it hard","i find it difficult"]],["i find hard","i find difficult"],"I find it hard to get up early.","<b>find + it + adjetivo</b>."),
+ T("Cuanto más lees, más fácil es escribir.",[["the more you read"],["the easier it is"]],[],"The more you read, the easier it is to write.","<b>the easier it is</b>.")],
+r15:[
+ G("actualmente → ___ (ojo: no es actually)",["currently"],"<i>actualmente</i> = <b>currently</b>; <i>actually</i> = en realidad."),
+ G("cometer un error → ___ a mistake",["make"],"<b>make</b> a mistake."),
+ G("los ingresos (dinero que ganas) → ___",["income"],"<b>income</b>."),
+ G("Spell it correctly: necesary",["necessary"],"Una c, dos s: <b>necessary</b>."),
+ G("Spell it correctly: enviroment",["environment"],"enviro-<b>n</b>-ment."),
+ G("Spell it correctly: recieve",["receive"],"<b>ei</b> después de c: receive."),
+ G("Spell it correctly: goverment",["government"],"gover-<b>n</b>-ment."),
+ G("Spell it correctly: accomodation",["accommodation"],"Dos c y dos m: <b>accommodation</b>."),
+ G("Spell it correctly: responsabilities",["responsibilities"],"respons-<b>i</b>-bilities.")]
+};
+RULES.forEach(r=>{if(EXTRA[r.id]) r.items.push(...EXTRA[r.id])});
+
+const EXTRA2={
+r16:[
+ G("to show (a trend) → to ___",["reveal","indicate","demonstrate","illustrate","suggest"],"<b>reveal, indicate, demonstrate</b>."),
+ G("to solve a problem → to ___ a problem",["tackle","address","deal with","resolve","fix"],"<b>tackle / address</b> a problem."),
+ G("to cause → to ___ to",["lead","contribute"],"<b>lead to / contribute to</b>."),
+ G("to have (an advantage) → to ___ an advantage",["offer","provide","bring"],"<b>offer / provide</b> an advantage."),
+ G("advantages → ___",["benefits","pros","merits","strengths"],"<b>benefits, merits, pros</b>."),
+ G("disadvantages → ___",["drawbacks","downsides","cons","weaknesses"],"<b>drawbacks, downsides</b>."),
+ G("very important → ___",["crucial","essential","vital","fundamental","key"],"<b>crucial, essential, vital</b>."),
+ G("expensive → ___ (formal)",["costly","high-priced","unaffordable","pricey"],"<b>costly, unaffordable</b>."),
+ G("cheap → ___",["affordable","inexpensive","low-cost","economical"],"<b>affordable, inexpensive</b>."),
+ G("old people → ___",["older people","the elderly","elderly people","senior citizens","older adults"],"<b>older people / the elderly</b>."),
+ G("jobs → ___",["employment","work","job opportunities"],"<b>employment</b> (incontable)."),
+ G("a lot (in a graph: increased a lot) → increased ___",["significantly","considerably","dramatically","sharply","substantially"],"<b>significantly, considerably, sharply</b>."),
+ G("a little (in a graph: fell a little) → fell ___",["slightly","marginally","gradually"],"<b>slightly, marginally</b>."),
+ G("to stay the same (in a graph) → to ___",["remain stable","remain steady","level off","stabilize","remain unchanged","plateau"],"<b>remain stable, level off, plateau</b>."),
+ G("the government → the ___",["authorities","state","public authorities"],"<b>the authorities / the state</b>."),
+ G("to give (opportunities) → to ___ opportunities",["provide","offer","create"],"<b>provide / offer</b> opportunities."),
+ G("to make better → to ___",["improve","enhance","boost"],"<b>improve, enhance, boost</b>."),
+ G("to make worse → to ___",["worsen","aggravate","damage","harm"],"<b>worsen, damage</b>."),
+ G("In my opinion, … → ___, …",["in my view","from my perspective","personally","i believe that","as i see it"],"<b>In my view, From my perspective</b>."),
+ G("In conclusion, … → ___, …",["to sum up","to conclude","overall","all in all","in summary"],"<b>To sum up, To conclude</b>.")],
+r17:[
+ G("Unemployment fell slightly. → There was a slight ___ in unemployment.",["fall","decrease","drop","decline"],"verbo → sustantivo: <b>a slight fall in</b>."),
+ G("Cities are becoming more crowded. → Cities are facing increasing ___.",["overcrowding","congestion"],"<b>overcrowding</b>."),
+ G("People are aware of the problem. → People's ___ of the problem is growing.",["awareness"],"<i>aware</i> → <b>awareness</b>."),
+ G("Young people are lonely. → ___ among young people is increasing.",["loneliness"],"<i>lonely</i> → <b>loneliness</b>."),
+ G("Museums are accessible to everyone. → Museums offer ___ to everyone.",["access","accessibility"],"<i>accessible</i> → <b>access</b>."),
+ G("Students learn better when they are motivated. → ___ helps students learn better.",["motivation"],"<i>motivated</i> → <b>motivation</b>."),
+ G("Tourists are increasing. → The ___ in tourists is a challenge.",["increase","rise","growth"],"<b>the increase in</b>."),
+ G("Governments should regulate rents. → Rents need government ___.",["regulation"],"<i>regulate</i> → <b>regulation</b>."),
+ G("It is important to protect the environment. → Environmental ___ is important.",["protection"],"<i>protect</i> → <b>protection</b>."),
+ G("Technology improves communication. → Technology leads to ___ communication.",["improved","better"],"verbo → adjetivo: <b>improved communication</b>."),
+ G("Prices varied a lot. → There was considerable ___ in prices.",["variation","fluctuation"],"<i>vary</i> → <b>variation</b>."),
+ G("The city expanded quickly. → The city's rapid ___ caused problems.",["expansion","growth"],"<i>expand</i> → <b>expansion</b>."),
+ G("People can choose more freely. → People have greater ___ of choice.",["freedom"],"<i>freely</i> → <b>freedom</b>."),
+ G("Many shops closed. → The ___ of many shops affected the area.",["closure"],"<i>close</i> → <b>closure</b>."),
+ G("Children depend on screens. → Children's ___ on screens is worrying.",["dependence","reliance"],"<i>depend</i> → <b>dependence</b>.")],
+r18:[
+ G("Some people say technology isolates us. (CLAIMED) → It is sometimes ___ technology isolates us.",["claimed that"],"<b>It is sometimes claimed that…</b>"),
+ G("Rents have risen, so many people have left. (RESULT) → Rents have risen. As ___, many people have left.",["a result"],"<b>As a result</b>."),
+ G("Although it was raining, we went out. (DESPITE) → We went out ___ raining.",["despite it","despite it being"],"<b>despite it (being)</b> raining."),
+ G("I prefer reading to watching TV. (RATHER) → I ___ than watch TV.",["would rather read","'d rather read"],"<b>would rather</b> + 1ª forma."),
+ G("It isn't necessary to book in advance. (NEED) → You ___ book in advance.",["don't need to","do not need to","needn't"],"<b>don't need to</b>."),
+ G("Living alone gives people more freedom. (PROVIDES) → Living alone ___ more freedom.",["provides people with"],"<b>provide someone with</b> something."),
+ G("Cities lack green spaces. (SHORTAGE) → There is ___ green spaces in cities.",["a shortage of"],"<b>a shortage of</b>."),
+ G("The number of cars fell by half. (HALVED) → The number of cars ___.",["halved","was halved","has halved"],"<b>halved</b> (verbo)."),
+ G("Online learning is very different from classroom learning. (DIFFERS) → Online learning ___ classroom learning.",["differs greatly from","differs a lot from","differs from","differs considerably from"],"<b>differ from</b>."),
+ G("People started to use smartphones a lot after 2010. (WIDESPREAD) → Smartphone use became ___ 2010.",["widespread after"],"<b>became widespread</b>."),
+ G("Tourism is the main cause of high rents. (MAINLY) → High rents are ___ tourism.",["mainly caused by","mainly due to"],"<b>mainly due to / caused by</b>."),
+ G("It's possible that AI will replace some jobs. (MAY) → AI ___ some jobs.",["may replace"],"<b>may</b> + 1ª forma."),
+ G("Not many people read books nowadays. (FEW) → ___ people read books nowadays.",["few","very few","relatively few"],"<b>Few</b> people…"),
+ G("Prices didn't change between 2015 and 2018. (STABLE) → Prices ___ between 2015 and 2018.",["remained stable","stayed stable","were stable"],"<b>remained stable</b>."),
+ G("This is the first time I have taken IELTS. (NEVER) → I ___ IELTS before.",["have never taken","'ve never taken"],"<b>never … before</b> = en toda mi vida hasta hoy → present perfect (<b>have + 3ª</b>). El past simple (<i>took</i>) necesita un momento terminado: <i>I took it in 2024</i>.")],
+r19:[
+ P("Some people think that the best way to reduce crime is to give longer prison sentences.",["It is often argued that imposing longer prison terms is the most effective way to cut crime."]),
+ P("Many children today are overweight.",["A growing number of young people today are overweight.","Childhood obesity is becoming increasingly common."]),
+ P("Some people believe that it is better to rent a home than to buy one.",["Some argue that renting a property is preferable to buying one."]),
+ P("Museums should be free for everyone.",["It is sometimes argued that there should be no admission fee for museums."]),
+ P("More and more people are moving from rural areas to cities.",["An increasing number of people are relocating from the countryside to urban areas."]),
+ P("Some people think that students should study science rather than arts subjects.",["It is often claimed that young people should prioritize scientific subjects over the arts."]),
+ P("Advertising encourages people to buy things they do not need.",["Some people argue that advertisements persuade consumers to purchase unnecessary products."]),
+ P("International tourism has become a huge industry.",["Tourism between countries has grown into an enormous global industry."]),
+ P("Many people work long hours and have little free time.",["A large number of people work long hours, leaving them with limited leisure time."]),
+ P("Some people believe that schools should teach children how to manage money.",["It is often argued that financial education should be part of the school curriculum."]),
+ P("Public libraries are no longer necessary because of the internet.",["Some argue that, due to the internet, public libraries have become unnecessary."]),
+ P("The bar chart shows the number of visitors to three museums in 2010 and 2020.",["The bar chart compares how many people visited three museums in 2010 and 2020."]),
+ P("The pie charts show how households spent their money in 1990 and 2020.",["The pie charts illustrate the proportion of household spending on different categories in 1990 and 2020."]),
+ P("The map shows how a town center changed between 2000 and today.",["The maps illustrate the changes that have taken place in a town center since 2000."]),
+ P("Some people believe that learning a musical instrument should be compulsory at school.",["It is sometimes argued that all students should be required to learn to play an instrument at school."])]
+};
+RULES.forEach(r=>{if(EXTRA2[r.id]) r.items.push(...EXTRA2[r.id])});
+
+const EXTRA3={
+r14:[
+ F("The website makes possible to transfer chord progressions to other songs.",[["makes it possible to"]],["makes possible to"],"The website makes it possible to transfer chord progressions to other songs.","<b>make it possible to</b> + verbo. Sin <i>it</i> no funciona (tu error del speaking, dos veces)."),
+ F("Online courses make much easier for people to study.",[["make it much easier"]],["make much easier","much more easier"],"Online courses make it much easier for people to study.","<b>make it + adjetivo + to/for</b>: <i>make it easier, make it possible</i>."),
+ T("Internet hace posible aprender desde casa.",[["makes it possible to learn","makes it possible for people to learn","makes it possible to study"]],["makes possible"],"The internet makes it possible to learn from home.","<b>makes it possible to</b>.")],
+r8:[
+ C("Their method is based ___ colors for each function.",["in","on","of"],"on","<b>based on</b>, como <i>depend on, rely on</i>."),
+ F("Universities shouldn't be replaced for online courses.",[["replaced by"]],["replaced for"],"Universities shouldn't be replaced by online courses.","<b>replaced by</b> (sustituido por)."),
+ C("The website is ___ clear examples you can listen to.",["empty of","full of","full with"],"full of","<b>full of</b> = lleno de. <i>Empty of</i> es lo contrario."),
+ T("La web está llena de ejemplos claros.",[["full of"]],["full with","empty of"],"The website is full of clear examples.","<b>full of</b>.")],
+r10:[
+ F("Learning in a group could be even more rich.",[["richer"]],["more rich"],"Learning in a group could be even richer.","Palabra corta → <b>-er</b>: rich → <b>richer</b>."),
+ F("It's not always the most fast way to learn.",[["the fastest"]],["most fast"],"It's not always the fastest way to learn.","Palabra corta → <b>-est</b>: <b>the fastest</b>."),
+ F("Apps make learning much more easier.",[["much easier"]],["more easier"],"Apps make learning much easier.","<b>easier</b> ya es comparativo: nunca <i>more easier</i>. Para reforzar: <b>much easier</b>.")],
+r2:[
+ F("When I found it, I immediately know it was going to be useful.",[["knew"]],["i immediately know"],"When I found it, I immediately knew it was going to be useful.","Algo pasado → <b>knew</b> (k-n-e-w). Cuidado: <i>new</i> = nuevo.")],
+r3:[
+ F("If a teacher know how to deal with different levels, everyone learns.",[["teacher knows"]],["teacher know how"],"If a teacher knows how to deal with different levels, everyone learns.","<i>a teacher</i> = he/she → <b>knows</b>.")],
+r5:[
+ F("The teachers have to adapt what they teach to their students.",[["teachers have to"]],["the teachers"],"Teachers have to adapt what they teach to their students.","Hablas de los profesores <b>en general</b> → sin <i>the</i>.")],
+r12:[
+ F("In any way, I think the real question is different.",[["anyway","in any case"]],["in any way"],"In any case, I think the real question is different.","<b>Anyway</b> (hablado) o <b>In any case</b> (más formal). <i>In any way</i> = de ninguna/cualquier manera.")],
+r15:[
+ C("The university hosts conferences and cultural ___.",["expositions","exhibitions","exposures"],"exhibitions","Falso amigo: exposición de arte = <b>exhibition</b>."),
+ C("Learning an instrument trains executive functions in a ___ way.",["funny","fun","funnier"],"fun","<b>fun</b> = divertido. <i>Funny</i> = que hace reír."),
+ C("Theater helps students express themselves in a ___ way.",["dramatical","dramatic","drama"],"dramatic","<i>Dramatical</i> no existe → <b>dramatic</b>. Y para «a través del teatro»: <b>through drama / theater</b>."),
+ F("You have to control your frustration to keep up practicing.",[["keep practicing"]],["keep up practicing"],"You have to control your frustration to keep practicing.","<b>keep + -ing</b> = seguir haciendo. Sin <i>up</i>."),
+ F("I would position on the side about learning collectively.",[["i'd side with","i would side with","i'd argue that","i would argue that"]],["position on the side"],"I would side with learning collectively.","Para dar tu postura: <b>I'd side with…</b> / <b>I'd argue that…</b>")]
+};
+RULES.forEach(r=>{if(EXTRA3[r.id]) r.items.push(...EXTRA3[r.id])});
+const EXTRA4={
+r8:[
+ F("One of the main problems is related with teachers' careers.",[["related to"]],["related with"],"One of the main problems is related to teachers' careers.","<b>related to</b> (nunca <i>with</i>)."),
+ F("Teachers in Spain are specialized on one subject.",[["specialized in","specialize in","specialise in","specialised in"]],["specialized on"],"Teachers in Spain are specialized in one subject.","<b>specialize in</b> / <b>be specialized in</b>, como en español «especializado <b>en</b>»."),
+ F("Sometimes it's not the purpose you were seeking for.",[["seeking","looking for"]],["seeking for"],"Sometimes it's not the purpose you were seeking.","<b>seek</b> no lleva preposición: <i>seek something</i> = <i>look <b>for</b> something</i>."),
+ F("I really want to deep on photo composition.",[["go deeper into","delve into","dig deeper into","explore","learn more about","get deeper into"]],["deep on"],"I really want to go deeper into photo composition.","<i>Deep</i> es adjetivo, no verbo → <b>go deeper into</b> / <b>delve into</b>."),
+ C("We should listen ___ the music before the concert.",["—","to","at"],"to","<b>listen to</b> + algo. Al final de la frase también: <i>the music we are going to listen <b>to</b></i>.")],
+r7:[
+ F("Teachers could conduct research while keep up teaching.",[["while still teaching","while continuing to teach","while they keep teaching","while teaching","and keep teaching"]],["keep up teaching","while keep"],"Teachers could conduct research while continuing to teach.","<b>keep + -ing</b> sin <i>up</i>, y después de <i>while</i> → <b>-ing</b>: <i>while continuing to teach / while still teaching</i>."),
+ OK("You have to manage your frustration to keep practicing.","Correcta: <b>keep + -ing</b>, sin <i>up</i>.")],
+r9:[
+ F("I need to know which kind of music are we going to listen.",[["music we are going to listen to"]],["are we going"],"I need to know which kind of music we are going to listen to.","Pregunta <b>dentro</b> de una frase → orden normal (sujeto + verbo): <i>which music <b>we are</b>…</i>. Y <b>listen to</b>."),
+ T("No sé dónde vamos a dormir.",[["where we are going to sleep","where we will sleep","where we're going to sleep","where we'll sleep","where we are going to stay","where we will stay"]],["where are we"],"I don't know where we are going to sleep.","Pregunta indirecta → <b>where we are</b>, no <i>where are we</i>.")],
+r15:[
+ C("Going to a concert is a really ___ activity for students.",["grateful","rewarding","thankful"],"rewarding","Falso amigo: «actividad agradecida» = <b>rewarding</b>. <i>Grateful</i> = una persona que da las gracias."),
+ T("Necesito tener claro qué música vamos a escuchar.",[["be clear about","be clear on","know exactly","be sure about","be sure of"],["listen to"]],["have clear"],"I need to be clear about what music we are going to listen to.","«Tener claro» = <b>be clear about</b> / <b>know exactly</b>. <i>Have clear</i> no existe."),
+ F("They are children or teenage people, so they make noise.",[["teenagers"]],["teenage people"],"They are children or teenagers, so they make noise.","<b>teenagers</b> (sustantivo). <i>Teenage</i> es adjetivo: <i>teenage students</i>.")],
+r2:[
+ T("Solemos pensar que los alumnos ya saben cómo es un concierto.",[["tend to think","tend to assume","usually think","usually assume","often think","often assume"]],["used to think"],"We tend to assume that students already know what a concert is like.","Hábito <b>presente</b> → <b>tend to / usually</b>. <i>Used to</i> = solo pasado («solíamos, ya no»).")],
+r3:[
+ F("School trips are real good opportunity for learning.",[["really good opportunities","great opportunities","excellent opportunities","real opportunities"]],["real good"],"School trips are really good opportunities for learning.","<i>trips</i> plural → <b>opportunities</b>. Y para intensificar un adjetivo: <b>really</b> good."),
+ F("I want to take a photo that communicates and express what I feel.",[["and expresses"]],["express what"],"I want to take a photo that communicates and expresses what I feel.","<i>a photo</i> = it → los dos verbos con <b>-s</b>: <i>communicate<b>s</b> and express<b>es</b></i>.")]
+};
+RULES.forEach(r=>{if(EXTRA4[r.id]) r.items.push(...EXTRA4[r.id])});
+const EXTRA5={
+r2:[
+ C("I ___ here since 2019.",["live","have lived","lived"],"have lived","<b>since</b> + punto de inicio → present perfect."),
+ C("Last year I ___ to Boston.",["have gone","went","go"],"went","Momento terminado (<i>last year</i>) → past simple."),
+ F("I am studying English since September.",[["have been studying"]],["am studying english since"],"I have been studying English since September.","<b>since</b> → <b>have been studying</b>, no presente."),
+ C("When I arrived, the concert ___.",["already started","had already started","has already started"],"had already started","Algo anterior a otro pasado → past perfect (<b>had + 3ª</b>)."),
+ T("Hace tres años que conozco a mi pareja.",[["have known"],["for three years"]],["since three years"],"I have known my partner for three years.","<b>have known … for</b> + periodo.")],
+r5:[
+ C("___ unemployment is a serious problem.",["The","—","An"],"—","Sustantivo incontable en general → sin artículo."),
+ F("The technology has changed our lives.",[["technology has changed"]],["the technology"],"Technology has changed our lives.","Hablas de la tecnología en general → sin <i>the</i>."),
+ C("She is ___ university student.",["an","a","the"],"a","<b>a</b> university: suena /ju/, sonido de consonante."),
+ F("Government should invest in the public transport.",[["the government"],["in public transport"]],["the public transport"],"The government should invest in public transport.","<b>the government</b> (uno concreto); <i>public transport</i> en general, sin <i>the</i>."),
+ T("Los niños necesitan jugar.",[["children need"]],["the children"],"Children need to play.","Niños en general → sin <i>the</i>.")],
+r7:[
+ C("I'm looking forward to ___ you.",["see","seeing","seen"],"seeing","<b>look forward to + -ing</b> (aquí <i>to</i> es preposición)."),
+ C("She decided ___ abroad.",["studying","to study","study"],"to study","<b>decide to</b> + verbo."),
+ F("I'm used to work long hours.",[["used to working"]],["used to work long"],"I'm used to working long hours.","<b>be used to + -ing</b> = estar acostumbrado."),
+ C("Many people avoid ___ about money.",["to talk","talking","talk"],"talking","<b>avoid + -ing</b>."),
+ T("Vale la pena aprender un idioma.",[["worth learning"]],["worth to learn"],"It is worth learning a language.","<b>be worth + -ing</b>.")],
+r8:[
+ C("This decision will have an impact ___ students.",["in","on","to"],"on","<b>impact on</b>."),
+ C("Many people are concerned ___ climate change.",["about","for","of"],"about","<b>concerned about</b> = preocupado por."),
+ F("Young people are more aware about the environment.",[["aware of"]],["aware about"],"Young people are more aware of the environment.","<b>aware of</b>."),
+ C("There has been an increase ___ house prices.",["of","in","on"],"in","<b>an increase in</b> + cosa. Con la cantidad: <i>an increase <b>of</b> 10%</i>."),
+ T("Depende del contexto.",[["depends on"]],["depends of"],"It depends on the context.","<b>depend on</b>.")],
+r9:[
+ F("I don't know what does she want.",[["what she wants"]],["what does"],"I don't know what she wants.","Pregunta indirecta → orden normal: <b>what she wants</b>."),
+ C("She ___ late.",["arrives always","always arrives"],"always arrives","Adverbio de frecuencia <b>antes</b> del verbo principal."),
+ F("I like very much classical music.",[["like classical music very much"]],["like very much"],"I like classical music very much.","No separes el verbo del objeto: <b>like X very much</b>."),
+ T("¿Puedes decirme dónde está la estación?",[["where the station is"]],["where is the station"],"Can you tell me where the station is?","Pregunta indirecta → <b>where the station is</b>."),
+ F("Not only it is cheap, but it is also fast.",[["not only is it cheap"]],["not only it is"],"Not only is it cheap, but it is also fast.","<b>Not only</b> al principio → inversión: <b>is it</b>.")],
+r10:[
+ F("This city is more big than mine.",[["bigger than"]],["more big"],"This city is bigger than mine.","Palabra corta → <b>bigger</b>."),
+ C("It is ___ option of all.",["the most expensive","the more expensive","the expensivest"],"the most expensive","Palabra larga → <b>the most</b>."),
+ F("Life is more expensive that before.",[["more expensive than"]],["expensive that"],"Life is more expensive than before.","Comparar → <b>than</b>, no <i>that</i>."),
+ T("Cada vez más gente vive sola.",[["more and more people","an increasing number of people","a growing number of people"]],[],"More and more people live alone.","<b>more and more</b> + plural."),
+ C("The problem is getting ___.",["worse and worse","more bad","badder"],"worse and worse","bad → <b>worse</b>; «cada vez peor» = <b>worse and worse</b>.")],
+r14:[
+ F("Is important to protect the environment.",[["it is important","it's important"]],[],"It is important to protect the environment.","El inglés siempre necesita sujeto → <b>It</b> is…"),
+ F("I consider necessary to change the law.",[["consider it necessary"]],["consider necessary"],"I consider it necessary to change the law.","<b>consider it + adjetivo + to</b>."),
+ T("Es difícil encontrar piso en Barcelona.",[["it is difficult","it's difficult","it is hard","it's hard"],["to find"]],[],"It is difficult to find an apartment in Barcelona.","<b>It is difficult to</b>… (americano: <i>apartment</i>)."),
+ F("Was a great experience.",[["it was a great experience"]],[],"It was a great experience.","Siempre sujeto: <b>It</b> was…"),
+ C("___ seems that prices will rise.",["It","—","This"],"It","<b>It seems that</b>…")]
+};
+RULES.forEach(r=>{if(EXTRA5[r.id]) r.items.push(...EXTRA5[r.id])});
+const VTIP=t=>["Vocabulario nuevo de nivel 7–8 para el tema <b>"+t+"</b>. La pista en español te dice qué significa.","Después de cada respuesta, lee la explicación: muchas palabras vienen con su <b>pareja</b> (colocación).","Intenta usar 2–3 palabras nuevas en tu próximo ensayo."];
+RULES.push(
+{id:"r21",name:"21 · Vocab: Educación",tip:VTIP("educación"),items:[
+ G("The ___ rate is higher in poorer areas. (abandono escolar)",["dropout","drop-out"],"<b>dropout rate</b> = tasa de abandono. Verbo: <i>drop out of school</i>."),
+ G("University ___ fees have risen sharply. (matrícula)",["tuition"],"<b>tuition fees</b> = la matrícula."),
+ G("Teachers should ___ critical thinking in their students. (fomentar)",["foster","encourage","promote","develop","nurture"],"<b>foster / nurture</b> critical thinking = fomentar el pensamiento crítico."),
+ C("Learning by heart without understanding is called ___ learning.",["rote","root","route"],"rote","<b>rote learning</b> = aprender de memoria, sin entender."),
+ G("Children from ___ backgrounds often have fewer opportunities. (desfavorecidos)",["disadvantaged","underprivileged","deprived","low-income"],"<b>disadvantaged / underprivileged backgrounds</b>."),
+ G("Learning doesn't stop at school: ___ learning is essential today. (a lo largo de la vida)",["lifelong"],"<b>lifelong learning</b> = aprendizaje a lo largo de la vida."),
+ T("La educación debería ser accesible para todos.",[["accessible to all","accessible to everyone","available to everyone","available to all","accessible for all","accessible for everyone"]],[],"Education should be accessible to all.","<b>accessible to all</b>."),
+ G("Exams don't assess ___ skills like teamwork. (transversales)",["soft","transferable","interpersonal","social"],"<b>soft skills / transferable skills</b> = competencias transversales.")]},
+{id:"r22",name:"22 · Vocab: Tecnología",tip:VTIP("tecnología"),items:[
+ G("Many people are ___ to their phones. (enganchados)",["addicted","glued","hooked"],"<b>addicted to / glued to</b> their phones."),
+ G("Older people may be left behind by the digital ___. (brecha)",["divide","gap"],"<b>the digital divide</b> = la brecha digital."),
+ C("False information that is spread on purpose is ___.",["misinformation","disinformation"],"disinformation","<b>disinformation</b> = falsa a propósito. <i>Misinformation</i> = falsa, pero sin intención."),
+ G("Automation could ___ many low-skilled jobs. (sustituir)",["replace","eliminate","displace","wipe out"],"<b>replace / displace jobs</b>."),
+ G("Social media can have a ___ effect on teenagers' self-esteem. (perjudicial)",["detrimental","harmful","negative","damaging"],"<b>a detrimental / harmful effect on</b>."),
+ G("Technology has ___ the way we communicate. (revolucionado)",["revolutionized","transformed","revolutionised"],"<b>revolutionize / transform</b>."),
+ T("Deberíamos reducir el tiempo que pasamos delante de las pantallas.",[["screen time","in front of screens","on screens","looking at screens"]],[],"We should reduce our screen time.","<b>screen time</b> = tiempo de pantalla."),
+ G("Personal data must be protected to guarantee users' ___. (privacidad)",["privacy"],"<b>privacy</b> (americano: /ˈpraɪvəsi/).")]},
+{id:"r23",name:"23 · Vocab: Medio ambiente",tip:VTIP("medio ambiente"),items:[
+ G("Governments must ___ carbon emissions. (reducir drásticamente)",["cut","reduce","curb","slash","lower"],"<b>cut / curb / slash emissions</b>."),
+ G("Fossil fuels should be replaced by ___ energy. (renovable)",["renewable","clean","green"],"<b>renewable energy</b>."),
+ C("Single-use plastic is plastic that is ___.",["used once and thrown away","recycled many times","made from plants"],"used once and thrown away","<b>single-use</b> = de un solo uso."),
+ G("Many species are at risk of ___. (extinción)",["extinction"],"<b>at risk of extinction</b>."),
+ G("Climate change will ___ droughts and floods. (agravar)",["worsen","exacerbate","aggravate","intensify"],"<b>exacerbate / worsen</b>."),
+ G("We should all reduce our carbon ___. (huella)",["footprint"],"<b>carbon footprint</b> = huella de carbono."),
+ T("Las empresas deberían ser más sostenibles.",[["sustainable"]],[],"Companies should be more sustainable.","<b>sustainable</b>; sustantivo: <i>sustainability</i>."),
+ G("Cities need better waste ___. (gestión)",["management"],"<b>waste management</b> = gestión de residuos.")]},
+{id:"r24",name:"24 · Vocab: Salud",tip:VTIP("salud"),items:[
+ G("A ___ lifestyle increases the risk of obesity. (sedentario)",["sedentary"],"<b>a sedentary lifestyle</b>."),
+ G("The government should ___ a tax on sugary drinks. (imponer)",["impose","introduce","levy","implement"],"<b>impose / introduce a tax on</b>."),
+ G("Prevention is better than ___. (curar)",["cure"],"Expresión fija: <b>Prevention is better than cure</b>."),
+ G("Long working hours can lead to ___. (estar quemado)",["burnout","exhaustion"],"<b>burnout</b> = el síndrome de estar quemado."),
+ C("'Life expectancy' means…",["how long people are expected to live","what people expect from life","the quality of life"],"how long people are expected to live","<b>life expectancy</b> = esperanza de vida."),
+ G("Healthcare should be ___ to everyone, regardless of income. (asequible)",["affordable","accessible","available"],"<b>affordable</b> = asequible (de precio). <b>regardless of</b> = independientemente de."),
+ T("La salud mental es tan importante como la física.",[["mental health"],["as important as"],["physical"]],[],"Mental health is as important as physical health.","<b>as important as</b>."),
+ G("Junk food is high in sugar and ___ in nutrients. (pobre)",["low","poor"],"<b>high in … low in</b>.")]},
+{id:"r25",name:"25 · Vocab: Trabajo",tip:VTIP("trabajo"),items:[
+ G("Many young people struggle to find a ___ job. (estable)",["stable","secure","permanent","steady"],"<b>a stable / secure job</b>."),
+ G("A good work–life ___ is essential for wellbeing. (equilibrio)",["balance"],"<b>work–life balance</b>."),
+ G("Youth unemployment is ___ high in Spain. (alarmantemente)",["alarmingly"],"<b>alarmingly high</b>."),
+ G("Remote work gives employees greater ___. (flexibilidad)",["flexibility","autonomy","freedom"],"<b>flexibility</b>."),
+ C("Someone who works for themselves is ___.",["self-employed","unemployed","self-made"],"self-employed","<b>self-employed</b> = autónomo."),
+ G("She ___ her job to study abroad. (dejó)",["quit","left"],"<b>quit / leave a job</b> (quit – quit – quit)."),
+ T("Ganar mucho dinero no garantiza la felicidad.",[["earning","making"],["guarantee"],["happiness"]],[],"Earning a lot of money does not guarantee happiness.","<b>earn / make money</b>; sujeto en -ing → singular: <i>does not</i>."),
+ G("Women are still ___ in senior positions. (infrarrepresentadas)",["underrepresented","under-represented"],"<b>underrepresented</b>.")]},
+{id:"r26",name:"26 · Vocab: Ciudad y sociedad",tip:VTIP("ciudad y sociedad"),items:[
+ G("Housing has become ___ for young people. (inasequible)",["unaffordable"],"<b>unaffordable</b> = inasequible."),
+ G("Tourism can drive up rents and ___ local residents. (desplazar)",["displace","push out","drive out","force out"],"<b>displace / push out residents</b>. Y <b>drive up rents</b> = disparar los alquileres."),
+ G("Traffic ___ is a major problem in big cities. (congestión)",["congestion"],"<b>traffic congestion</b> (o <i>traffic jams</i>)."),
+ C("'Gentrification' is when…",["wealthier people move into a poorer area and prices rise","a city builds more parks","young people move to the countryside"],"wealthier people move into a poorer area and prices rise","<b>gentrification</b> = gentrificación."),
+ G("Public spaces help build a sense of ___. (comunidad)",["community","belonging"],"<b>a sense of community / belonging</b>."),
+ G("Many older adults suffer from social ___. (aislamiento)",["isolation"],"<b>social isolation</b>."),
+ T("El gobierno debería invertir en vivienda pública.",[["invest in"],["public housing","social housing","affordable housing"]],[],"The government should invest in public housing.","<b>invest in</b> + <b>public / social housing</b>."),
+ G("Crime rates have ___ in recent years. (disminuido)",["fallen","dropped","declined","decreased","gone down"],"<b>have fallen / declined</b>.")]},
+{id:"r27",name:"27 · Vocab: Cultura y artes",tip:VTIP("cultura y artes"),items:[
+ G("Museums help ___ a country's history. (preservar)",["preserve","protect","conserve","safeguard"],"<b>preserve / safeguard</b>."),
+ G("Cultural ___ includes the traditions and buildings a society inherits. (patrimonio)",["heritage"],"<b>cultural heritage</b> = patrimonio cultural."),
+ G("Arts subjects ___ creativity and self-expression. (fomentan)",["foster","encourage","promote","develop","nurture","boost"],"<b>foster / nurture creativity</b>."),
+ C("If the government 'subsidizes' the arts, it…",["gives them money","controls what artists make","taxes them"],"gives them money","<b>subsidize</b> = subvencionar; <i>subsidy</i> = subvención."),
+ G("Globalization may lead to a loss of cultural ___. (identidad)",["identity","diversity"],"<b>cultural identity / diversity</b>."),
+ G("The concert was an ___ experience for the students. (enriquecedora)",["enriching"],"<b>an enriching experience</b> (ojo: <i>an</i>, porque empieza por vocal). También: <i>a rewarding experience</i>."),
+ T("La música debería ser obligatoria en la escuela.",[["compulsory","mandatory","obligatory"]],[],"Music should be compulsory at school.","<b>compulsory</b> (<i>at school</i>)."),
+ G("Free entry would make museums more ___ to low-income families. (accesibles)",["accessible"],"<b>accessible to</b>.")]}
+);
+RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
+const ALL=RULES.flatMap(r=>r.items);
+const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
+
+const WHYNOT={
+"r1-0":{"rise":"<i>rise</i> es la 1ª forma: va detrás de <i>to, will, can</i>… Detrás de <i>have</i> nunca.","rose":"<i>rose</i> es la 2ª forma (pasado): va sola, sin <i>have</i> delante: <i>rents rose in 2020</i>."},
+"r1-1":{"felt":"<i>felt</i> es el pasado de <i>feel</i> (sentir), no de <i>fall</i> (caer).","fallen":"<i>fallen</i> es la 3ª forma: necesita <i>have/has</i> delante (<i>have fallen</i>). Aquí no hay nada delante."},
+"r2-0":{"have gone":"<i>have gone</i> no puede ir con <i>ago</i>: <i>ago</i> marca un momento terminado → pasado simple.","go":"<i>go</i> es presente; <i>two years ago</i> es pasado."},
+"r2-1":{"rose":"<i>rose</i> es para un momento terminado (<i>in 2015</i>). Con <i>since</i> (desde… hasta hoy) necesitas <i>have risen</i>."},
+"r2-2":{"used to":"<i>used to</i> = algo que hacías antes y <b>ya no haces</b> (<i>solía</i>). Como todavía paseas al perro los sábados, es un hábito de ahora → <i>usually</i>. Ejemplo correcto de <i>used to</i>: <i>I used to live in Horta</i> (ya no vivo allí)."},
+"r2-3":{"will be":"En inglés, después de <i>when</i> hablando del futuro no se pone <i>will</i>; se usa el presente. Como en español no dices <i>cuando tendré 50</i>, sino <i>cuando tenga</i>."},
+"r3-0":{"pays":"<i>pays</i> (con -s) es para <b>uno</b>. <i>People</i> son varios."},
+"r3-1":{"have":"<i>have</i> es para varios. Aquí el sujeto es <i>the number</i> (un número), aunque detrás venga <i>cars</i>."},
+"r3-2":{"need":"<i>everyone</i> significa «todos», pero gramaticalmente es <b>uno</b> (como <i>cada persona</i>) → <i>needs</i>."},
+"r3-3":{"outweigh":"El sujeto es <i>the need</i> (una necesidad). <i>costs and responsibilities</i> están en medio y te engañan: tápalos con el dedo."},
+"r4-0":{"advices":"<i>advice</i> es incontable en inglés: nunca lleva -s. Para contar: <i>pieces of advice</i>."},
+"r4-1":{"less":"<i>less</i> es para cosas que no se cuentan (<i>less time</i>). Las horas se cuentan (1, 2, 3 horas) → <i>fewer</i>."},
+"r4-2":{"lifes":"<i>lifes</i> no existe. Las palabras en -fe cambian a -ves: <i>life → lives</i>, <i>knife → knives</i>."},
+"r4-3":{"number":"<i>the number of</i> es para cosas que se cuentan (<i>the number of books</i>). <i>Time</i> no se cuenta → <i>the amount of</i>."},
+"r5-0":{"The culture":"Hablas de la cultura <b>en general</b>. En inglés, en general no se pone <i>the</i> (en español sí: <i>la cultura</i>)."},
+"r5-1":{"the":"<i>at university</i> es una expresión fija para «estudiar en la universidad» como actividad, igual que <i>at school</i>, <i>at work</i>. Sin <i>the</i>."},
+"r5-2":{"(nada)":"Los países con <i>States, Kingdom, Republic</i> llevan <i>the</i>: <i>the US, the UK</i>. (<i>Spain, France</i> no.)"},
+"r5-3":{"the":"<i>the</i> sería para un patio concreto que ya conocemos. Aquí es la primera vez que lo mencionas → <i>a</i>.","(nada)":"<i>yard</i> es contable y es uno → necesita <i>a</i>."},
+"r6-0":{"economy":"<i>economy</i> es el sustantivo (la economía). Al lado de otro sustantivo (<i>crisis</i>) se necesita el adjetivo.","economical":"<i>economical</i> = barato, que ahorra (<i>an economical car</i>). La crisis no es «barata»: es de la economía → <i>economic</i>."},
+"r6-1":{"economic":"<i>economic</i> = relacionado con la economía (<i>economic crisis</i>). Para «barato, que ahorra» → <i>economical</i>."},
+"r6-2":{"dramatic":"<i>dramatic</i> es el adjetivo: va con un sustantivo (<i>a dramatic rise</i>). Aquí describes un verbo (<i>rose</i>) → <i>-ly</i>.","dramatical":"<i>dramatical</i> no existe en inglés."},
+"r6-3":{"democratical":"<i>democratical</i> no existe. Es <i>democratic</i>, como <i>dramatic</i>."},
+"r7-0":{"study":"Detrás de una preposición (<i>about</i>) el verbo va con <i>-ing</i>. En español usas infinitivo (<i>pensando en estudiar</i>), en inglés no.","to study":"Detrás de una preposición (<i>about</i>) nunca va <i>to</i> + verbo: va <i>-ing</i>."},
+"r7-1":{"applying":"<i>decide</i> mira al futuro y va con <i>to</i> + verbo, como <i>want to</i>, <i>plan to</i>."},
+"r7-2":{"to think":"Con <i>make</i> (hacer que alguien haga algo) el verbo va <b>sin</b> <i>to</i>: <i>make students think</i>.","thinking":"Con <i>make</i> + persona, el verbo va en la 1ª forma, sin <i>-ing</i>."},
+"r7-3":{"to read":"<i>enjoy</i> siempre va con <i>-ing</i>: <i>enjoy reading</i>, <i>enjoy walking</i>."},
+"r8-7":{"attended to":"<i>attend</i> (asistir a) no lleva preposición en inglés. <i>Attend to</i> significa otra cosa: «ocuparse de»."},
+"r8-8":{"impact on":"Como <b>sustantivo</b> sí: <i>an impact on</i>. Pero aquí <i>impact</i> es <b>verbo</b> (después de <i>deliveries</i>) → sin <i>on</i>."},
+"r9-0":{"is life":"<i>is life</i> es orden de pregunta (<i>What is life like?</i>). Dentro de una frase (<i>I don't know…</i>) ya no es pregunta → la cosa primero: <i>life is</i>."},
+"r9-1":{"means also":"<i>also</i> va <b>delante</b> del verbo principal: <i>it also means</i>. (Solo va detrás con <i>is/are</i>: <i>it is also</i>.)"},
+"r9-2":{"is the job":"Dentro de una frase (<i>It depends on how…</i>) no es una pregunta → orden normal: <i>the job is</i>."},
+"r10-0":{"more easy":"<i>easy</i> es corta → se añade <i>-er</i>: <i>easier</i>. No se usa <i>more</i>.","more easier":"<i>easier</i> ya significa «más fácil»: con <i>more</i> dirías «más más fácil»."},
+"r10-1":{"than":"<i>than</i> se usa con comparativos (<i>bigger than</i>). Con <i>the same</i> siempre va <i>as</i>."},
+"r10-2":{"higher":"<i>higher</i> compara dos cosas. Aquí son <b>tres</b> metales → el más alto de todos: <i>the highest</i>."},
+"r11-0":{"would have":"Nunca <i>would</i> en la mitad del <i>if</i>. En español es <i>si <b>tuviera</b></i> → <i>if I <b>had</b></i>."},
+"r11-1":{"study":"Hablas del pasado (no estudiaste): <i>would</i> + <i>have</i> + 3ª forma → <i>would have studied</i> (<i>habría estudiado</i>)."},
+"r11-2":{"will rain":"Después de <i>if</i> hablando del futuro, presente: <i>if it rains</i> (como <i>si llueve</i>, no <i>si lloverá</i>)."},
+"r12-0":{"Although":"<i>although</i> necesita una frase completa detrás (alguien + verbo). Aquí solo hay una cosa (<i>the noise</i>) → <i>despite</i>."},
+"r12-1":{"Despite":"<i>despite</i> va con una cosa o -ing. Aquí hay una frase completa (<i>it was raining</i>) → <i>although</i>."},
+"r12-2":{"because":"<i>because</i> necesita una frase (alguien + verbo: <i>because demand was high</i>). Aquí hay solo una cosa (<i>high demand</i>) → <i>because of</i>."},
+"r12-3":{"In":"Es una expresión fija: siempre <i>on</i> the one hand / <i>on</i> the other hand."},
+"r13-0":{"replaced":"<i>The old bins replaced…</i> diría que las papeleras sustituyeron a algo. Fueron sustituidas → pasiva: <i>were replaced</i>."},
+"r14-0":{"easier":"Falta el sujeto «falso» <i>it</i>: <i>make + it + adjetivo + to…</i> En español no hace falta, en inglés sí."},
+"r14-1":{"hard":"Con <i>find</i> + adjetivo + <i>to</i>, hace falta <i>it</i>: <i>I find it hard to…</i>"}
+};
+
+// ---------- state ----------
+const KEY="grammar-trainer-v1";
+let box={}; try{box=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){box={}}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(box))}catch(e){}};
+let S=null; // session
+
+function mastery(r){const its=r.items;const m=its.filter(i=>(box[i.id]||0)>=2).length;return Math.round(m/its.length*100)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function startRule(rid){
+  const r=ruleById[rid];
+  const pick=shuffle([...r.items]).sort((a,b)=>(box[a.id]||0)-(box[b.id]||0)).slice(0,10);
+  const items=pick.sort((a,b)=>ORDER[a.t]-ORDER[b.t]);
+  S={mode:"rule",title:r.name,rule:r,queue:items.map(i=>i.id),stage:"tip",log:{},first:{},cur:null,answered:false};
+  render();
+}
+function startMixed(onlyWrong){
+  let pool=ALL.slice();
+  if(onlyWrong) pool=pool.filter(i=>box[i.id]!==undefined&&(box[i.id]||0)<2);
+  pool=shuffle(pool).sort((a,b)=>(box[a.id]||0)-(box[b.id]||0)).slice(0,15);
+  pool=shuffle(pool);
+  S={mode:onlyWrong?"wrong":"mixed",title:onlyWrong?"Solo mis fallos":"Repaso mezclado",queue:pool.map(i=>i.id),stage:"q",log:{},first:{},cur:null,answered:false};
+  if(!pool.length){S.stage="empty"}
+  render();
+}
+function home(){S=null;render()}
+
+function check(it,val,claimOk){
+  if(it.t==="choose") return val===it.a;
+  if(it.t==="gap"){
+    if(it.acc.includes(N(val))) return true;
+    const base=it.q.replace(/\s*\([^)]*\)\s*$/,"");
+    const v=N(val);
+    return it.acc.some(a=>{
+      const full=N(base.replace(/_{2,}(\s*_{2,})?/,a));
+      const before=N(base.split(/_{2,}/)[0]).split(" ").pop();
+      if(v===full || (before && v===N(before+" "+a))) return true;
+      // accept any answer made only of the question's own words plus the right answer
+      const tok=x=>N(x).replace(/[^a-z0-9' ]/g," ").split(" ").filter(Boolean);
+      const allowed=new Set([...tok(base),...tok(a)]);
+      const vt=tok(val), at=tok(a);
+      const hasA=(" "+vt.join(" ")+" ").includes(" "+at.join(" ")+" ");
+      return hasA && vt.every(w=>allowed.has(w));
+    });
+  }
+  if(it.t==="ok") return claimOk || N(val)===N(it.q);
+  if(claimOk) return false;
+  const v=" "+N(val)+" ";
+  const allMust=it.must.every(alts=>alts.some(a=>v.includes(N(a))));
+  const noBad=(it.not||[]).every(b=>!v.includes(N(b)));
+  return allMust&&noBad;
+}
+function lev(a,b){const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+function fixTypos(it,val){
+  const tok=x=>N(x).replace(/[^a-z0-9' ]/g," ").split(" ").filter(Boolean);
+  const vocab=new Set([...tok(it.q),...tok(it.model||""),...(it.must||[]).flat().flatMap(tok),...(it.acc||[]).flatMap(tok)]);
+  const fixes=[];
+  const banned=new Set([...(it.not||[]).flatMap(tok),"felt","rose","fell","lose","lost","live","life","lives","thought","taught","than","then","were","where","raise","rise","economic","economical","advice","advise","affect","effect"]);
+  const out=tok(val).map(w=>{if(vocab.has(w)||w.length<4||banned.has(w))return w;let best=null,bd=9;
+    vocab.forEach(v=>{const dd=lev(w,v);if(dd<bd){bd=dd;best=v}});
+    if(best&&bd<=(w.length>=6?2:1)){fixes.push([w,best]);return best}return w});
+  return {text:out.join(" "),fixes};
+}
+function answer(val,claimOk,forced){
+  if(S.answered) return;
+  const it=ALL.find(i=>i.id===S.cur);
+  let ok=forced!==undefined?forced:check(it,val,claimOk); S.typos=[];
+  if(forced===undefined&&!ok&&!claimOk&&it.t!=="choose"&&it.t!=="para"&&it.rule!=="r15"){
+    const f=fixTypos(it,val);
+    if(f.fixes.length&&check(it,f.text,false)){S.typos=f.fixes}
+  }
+  S.gapNote=null;
+  if(!ok&&it.t==="gap"&&!S.typos.length){
+    const tk=x=>N(x).replace(/[^a-z0-9' ]/g," ").split(" ").filter(Boolean);
+    const base=it.q.replace(/\s*\([^)]*\)\s*$/,""), a=it.acc[0], vt=tk(val), at=tk(a);
+    if(vt.length>at.length+1&&(" "+vt.join(" ")+" ").includes(" "+at.join(" ")+" ")){
+      const ft=tk(base.replace(/_{2,}(\s*_{2,})?/,a));
+      let pairs=[];
+      if(ft.length===vt.length){vt.forEach((w,i)=>{if(w!==ft[i])pairs.push([w,ft[i]])})}
+      else{const ok2=new Set(ft);vt.forEach(w=>{if(!ok2.has(w))pairs.push([w,null])})}
+      if(pairs.length)S.gapNote=pairs;
+    }
+  }
+  S.answered=true; S.lastOk=ok; S.lastVal=claimOk?"(Ya es correcta)":val;
+  if(!(it.id in S.first)){S.first[it.id]=ok; box[it.id]=ok?Math.min((box[it.id]||0)+1,4):0; save()}
+  (S.log[it.rule]=S.log[it.rule]||{ok:0,bad:0})[ok?"ok":"bad"]++;
+  if(!ok){S.queue.splice(Math.min(3,S.queue.length),0,it.id)}
+  render();
+}
+function next(){S.answered=false;S.cur=null;S.paraVal=null;render()}
+
+// ---------- render ----------
+const app=document.getElementById("app");
+function whyNotHTML(it){
+  if(it.t!=="choose") return "";
+  if(!WHYNOT[it.id]) return (!S.lastOk&&S.lastVal)?`<span>👉 <b>Por qué «${esc(S.lastVal)}» no:</b> no sigue la regla de arriba. Compara tu opción con <b>${esc(it.a)}</b> y busca qué palabra de la frase decide la forma.</span>`:"";
+  const m=WHYNOT[it.id], chosen=S.lastVal;
+  const rows=Object.entries(m).map(([o,t])=>`<span>${o===chosen&&!S.lastOk?"👉 ":""}<b>Por qué «${esc(o)}» no:</b> ${t}</span>`);
+  return rows.join("");
+}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function render(){
+  if(!S){
+    const seen=ALL.filter(i=>box[i.id]!==undefined).length;
+    const wrong=ALL.filter(i=>box[i.id]!==undefined&&(box[i.id]||0)<2).length;
+    app.innerHTML=`<header style="display:grid;gap:6px"><h1>Grammar Trainer</h1>
+      <p class="muted">Ejercicios hechos con tus propios errores. Cada regla empieza con un recordatorio y va de lo fácil (elegir) a lo difícil (traducir). Lo que falles vuelve a salir.</p></header>
+      <div class="hero"><h2>¿Qué hago hoy?</h2>
+        <p class="muted">Sugerencia: <b>una regla nueva</b> (unos 8 min) + el <b>repaso mezclado</b> (unos 10 min). El repaso mezcla todas las reglas, como en el examen.</p>
+        <div class="row"><button class="primary" id="mix">Repaso mezclado (15)</button><button id="wrong" ${wrong?"":"disabled"}>Solo mis fallos (${wrong})</button></div>
+        <p class="muted">Has practicado ${seen} de ${ALL.length} ejercicios.</p></div>
+      <h2>Las reglas</h2>
+      <div class="grid">${RULES.map(r=>`<button class="rule" data-r="${r.id}"><b>${r.name}</b><span class="bar"><i style="width:${mastery(r)}%"></i></span><span class="muted">${r.items.length} ejercicios · dominado ${mastery(r)}%</span></button>`).join("")}</div>
+      <div class="row"><button class="small" id="reset">Borrar mi progreso</button></div>`;
+    document.getElementById("mix").onclick=()=>startMixed(false);
+    const w=document.getElementById("wrong"); if(w) w.onclick=()=>startMixed(true);
+    app.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>startRule(b.dataset.r));
+    document.getElementById("reset").onclick=e=>{if(e.target.dataset.sure){box={};save();render()}else{e.target.dataset.sure=1;e.target.textContent="Pulsa otra vez para confirmar"}};
+    return;
+  }
+  if(S.stage==="empty"){
+    app.innerHTML=`<div class="card"><h2>No hay fallos pendientes</h2><p class="muted">Cuando falles un ejercicio, aparecerá aquí.</p><div class="row"><button class="primary" id="h">Volver</button></div></div>`;
+    document.getElementById("h").onclick=home;return;
+  }
+  if(S.stage==="tip"){
+    const r=S.rule;
+    app.innerHTML=`<div class="top"><button class="small" id="h">← Reglas</button><span>${esc(r.name)}</span></div>
+      <div class="card"><span class="tag">Recuerda la regla</span><h2>${esc(r.name)}</h2>
+      <div class="reminder"><ul>${r.tip.map(t=>`<li>${t}</li>`).join("")}</ul></div>
+      <p class="muted">Cada sesión elige 10 frases distintas de un banco de ${r.items.length}, empezando por las que más te cuestan. Léela una vez y luego intenta los ejercicios <b>sin volver a mirarla</b>. Recordar por ti misma es lo que fija la regla.</p>
+      <div class="row"><button class="primary" id="go">Empezar (10 ejercicios)</button></div></div>`;
+    document.getElementById("h").onclick=home;
+    document.getElementById("go").onclick=()=>{S.stage="q";render()};
+    return;
+  }
+  if(!S.queue.length&&!S.answered){
+    const rows=Object.entries(S.log).map(([rid,v])=>`<tr><td>${esc(ruleById[rid].name)}</td><td>${v.ok} ✓ · ${v.bad} ✗</td></tr>`).join("");
+    const firstOk=Object.values(S.first).filter(Boolean).length, total=Object.keys(S.first).length;
+    const missed=Object.entries(S.first).filter(([,v])=>!v).map(([id])=>ALL.find(i=>i.id===id));
+    const txt=`Grammar Trainer · ${S.title}: ${firstOk}/${total} a la primera.\n`+Object.entries(S.log).map(([rid,v])=>`- ${ruleById[rid].name}: ${v.ok} ✓, ${v.bad} ✗`).join("\n")+(missed.length?`\nFallos:\n`+missed.map(i=>`- ${i.q.replace(/<[^>]+>/g,"")} → ${i.model||i.a}`).join("\n"):"");
+    app.innerHTML=`<div class="card"><span class="tag">Sesión terminada</span><h2>${firstOk} de ${total} a la primera</h2>
+      <table class="sum">${rows}</table>
+      <p class="muted">${missed.length?"Los que fallaste volverán en «Solo mis fallos». Hazlo mañana: el repaso funciona mejor después de dormir.":"¡Todo bien a la primera! Mañana, prueba el repaso mezclado."}</p>
+      <div class="row"><button class="primary" id="h">Volver a las reglas</button><button id="cp">Copiar resultados para Claude</button></div>
+      <textarea class="out" id="out" readonly aria-label="Resultados">${esc(txt)}</textarea><p class="muted" id="msg"></p></div>`;
+    document.getElementById("h").onclick=home;
+    document.getElementById("cp").onclick=()=>{const o=document.getElementById("out"),m=document.getElementById("msg");
+      try{navigator.clipboard.writeText(o.value).then(()=>m.textContent="Copiado. Pégalo en el chat.",()=>{o.select();m.textContent="No se pudo copiar: el texto está seleccionado, cópialo a mano."})}catch(e){o.select();m.textContent="No se pudo copiar: el texto está seleccionado, cópialo a mano."}};
+    return;
+  }
+  if(!S.cur) S.cur=S.queue.shift();
+  const it=ALL.find(i=>i.id===S.cur), r=ruleById[it.rule];
+  const left=S.queue.length+1;
+  let body="";
+  if(it.t==="para"){
+    const tok=x=>N(x).replace(/[^a-z0-9' ]/g," ").split(" ").filter(Boolean);
+    const STOP=new Set("a an the of to in on for and or that is are be that this these those than more many most some people with from by as at it its their they there what who which have has had do does".split(" "));
+    if(!S.paraVal&&!S.answered){
+      body=`<form id="pf" style="display:grid;gap:8px"><textarea id="pin" rows="3" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" placeholder="Escribe tu paráfrasis… (Intro = comparar)" aria-label="Tu paráfrasis"></textarea>
+        <div class="row"><button class="primary" type="submit">Comparar con los modelos</button></div></form>`;
+    }else{
+      const v=S.paraVal||S.lastVal;
+      const content=tok(it.q).filter(w=>!STOP.has(w)&&w.length>2);
+      const mine=new Set(tok(v));
+      const copied=content.filter(w=>mine.has(w));
+      const pct=content.length?Math.round(copied.length/content.length*100):0;
+      body=`<div class="fb" style="background:var(--chip)"><span><b>Tu paráfrasis:</b> ${esc(v)}</span>
+        <span class="muted">Palabras importantes copiadas de la pregunta: <b>${pct}%</b>${pct>60?" · intenta cambiar más (sinónimos, forma de palabra, estructura)":pct<=40?" · ¡bien, has cambiado bastante!":""}${copied.length?" ("+copied.map(esc).join(", ")+")":""}</span></div>
+        <div class="reminder"><b>Paráfrasis modelo (nivel 7+):</b><ul>${it.models.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>
+        <b>Comprueba la tuya:</b><ul><li>¿Has cambiado 2–3 cosas (marco, sinónimos, forma, estructura)?</li><li>¿Significa <b>exactamente</b> lo mismo?</li><li>¿La gramática y la ortografía están bien?</li></ul></div>
+        ${S.answered?"":`<div class="row"><button class="primary" id="pgood">✓ La mía está bien</button><button id="pbad">✗ Necesito repasarla</button></div>
+        <form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: 1 = está bien · 2 = repasarla" aria-label="1 está bien, 2 repasarla"></form>`}`;
+    }
+  }else if(it.t==="choose"){
+    body=`<div class="opts">${it.opts.map(o=>{let cls="";if(S.answered){if(o===it.a)cls="right";else if(o===S.lastVal)cls="wrong"}return `<button data-o="${esc(o)}" class="${cls}" ${S.answered?"disabled":""}><span class="muted">${it.opts.indexOf(o)+1} ·</span> ${esc(o)}</button>`}).join("")}</div>${S.answered?"":`<form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: escribe ${it.opts.map((_,i)=>i+1).join(", ")} y pulsa Intro" aria-label="Número de la opción"></form>`}`;
+  }else{
+    const ph=it.t==="gap"?"Escribe la palabra…":it.t==="tr"?"Escribe la frase en inglés…":"Escribe la frase corregida…";
+    const ph2=ph+((it.t==="fix"||it.t==="ok")?" (o escribe ok si ya es correcta)":"");
+    body=S.answered?"":`<form id="f" class="row" style="display:grid;gap:8px"><input type="text" id="in" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="${ph2}" aria-label="${ph}">
+      <div class="row"><button class="primary" type="submit" ${S.answered?"disabled":""}>Comprobar</button>${(it.t==="fix"||it.t==="ok")?`<button type="button" id="okb" ${S.answered?"disabled":""}>Ya es correcta</button>`:""}</div></form>`;
+  }
+  let fb="";
+  if(S.answered){
+    const model=it.t==="choose"?it.a:it.model;
+    if(it.t==="para"){fb=`<div class="fb ${S.lastOk?"good":"bad"}"><span class="h">${S.lastOk?"✓ Bien hecho":"✗ Para repasar"}</span><span class="muted">${S.lastOk?"Sigue así: una buena paráfrasis vale puntos de vocabulario en cada introducción.":"Volverá a salir dentro de unas preguntas. Prueba otra técnica la próxima vez."}</span></div><div class="row"><button class="primary" id="nx">Siguiente →</button></div><form id="kf"><input type="text" id="kin" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="Pulsa Intro para la siguiente" aria-label="Pulsa Intro para la siguiente"></form>`}else{
+    fb=`<div class="fb ${S.lastOk?"good":"bad"}"><span class="h">${S.lastOk?"✓ Correcto":(S.typos&&S.typos.length?"✗ Error de ortografía":"✗ Todavía no")}</span>${S.typos&&S.typos.length?`<span>La gramática está bien, pero hay una palabra mal escrita: ${S.typos.map(([a,b])=>`<b>${esc(a)}</b> → <b>${esc(b)}</b>`).join(", ")}. En el examen también cuenta como error.</span>`:""}${S.gapNote?`<span>El hueco está bien, pero has cambiado otra palabra de la frase: ${S.gapNote.map(([a,b])=>b?`<b>${esc(a)}</b> → <b>${esc(b)}</b>`:`<b>${esc(a)}</b>`).join(", ")}.</span>`:""}
+      ${S.lastOk?"":`<span>Tu respuesta: <b>${esc(S.lastVal)}</b></span><span>Respuesta correcta: <b>${esc(model)}</b></span>`}
+      <span>${it.why}</span>${whyNotHTML(it)}${S.lastOk?"":`<span class="muted">Volverá a salir dentro de unas preguntas.</span>`}</div>
+      <div class="row"><button class="primary" id="nx">Siguiente →</button></div><form id="kf"><input type="text" id="kin" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="Pulsa Intro para la siguiente" aria-label="Pulsa Intro para la siguiente"></form>`;}
+  }
+  app.innerHTML=`<div class="top"><button class="small" id="h">← Reglas</button><span>${esc(S.title)} · quedan ${left}</span></div>
+    <div class="card"><span class="tag">${esc(r.name)}</span><span class="kind">${KIND[it.t]}</span>
+    <p class="q">${esc(it.q)}</p>${body}${fb}</div>`;
+  document.getElementById("h").onclick=home;
+  const focusNow=id=>{const i=document.getElementById(id);if(i){i.focus({preventScroll:true});return i}};
+  const pf=document.getElementById("pf");
+  if(pf){const ta=document.getElementById("pin");
+    pf.onsubmit=e=>{e.preventDefault();const v=ta.value.trim();if(v){S.paraVal=v;render()}};
+    ta.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();pf.requestSubmit?pf.requestSubmit():pf.onsubmit(e)}};
+    focusNow("pin")}
+  const pg=document.getElementById("pgood"),pb=document.getElementById("pbad");
+  if(pg){pg.onclick=()=>answer(S.paraVal,false,true);pb.onclick=()=>answer(S.paraVal,false,false)}
+  if(it.t==="choose"&&!S.answered) app.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>answer(b.dataset.o,false));
+  const f=document.getElementById("f");
+  if(f&&!S.answered){const inp=document.getElementById("in");
+    f.onsubmit=e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;const lv=v.toLowerCase();
+      if(it.t==="choose"){const k="123456".indexOf(lv)>=0?+lv-1:"abcdef".indexOf(lv);if(k>=0&&k<it.opts.length)answer(it.opts[k],false);else{inp.value="";inp.placeholder="Escribe solo el número: "+it.opts.map((_,i)=>i+1).join(", ")}return}
+      if(it.t==="para"){if(lv==="1"||lv==="✓")answer(S.paraVal,false,true);else if(lv==="2"||lv==="✗")answer(S.paraVal,false,false);else{inp.value="";inp.placeholder="Escribe 1 o 2"}return}
+      if((it.t==="fix"||it.t==="ok")&&(lv==="ok"||lv==="="))return answer("",true);
+      answer(v,false)};
+    const ok=document.getElementById("okb"); if(ok) ok.onclick=()=>answer("",true);
+    focusNow("in");}
+  const nx=document.getElementById("nx"); if(nx){nx.onclick=next}
+  const kf=document.getElementById("kf");
+  if(kf){kf.onsubmit=e=>{e.preventDefault();next()};const k=focusNow("kin");
+  }
+  [60,350,700].forEach(t=>setTimeout(fitKb,t));
+}
+// Fit the card to the space above the iPhone keyboard
+function fitKb(){
+  const vv=window.visualViewport; if(!vv) return;
+  const kbOpen=vv.height<window.innerHeight*0.85;
+  document.body.style.paddingBottom=kbOpen?(window.innerHeight-vv.height+40)+"px":"";
+  const card=app.querySelector(".card"); if(!card||!kbOpen) return;
+  const top=el=>el.getBoundingClientRect().top+window.scrollY;
+  const fb=app.querySelector(".fb"), inp=app.querySelector("#in,#pin");
+  let y;
+  if(fb) y=top(fb)-10;                                   // answered: show the correction
+  else if(inp){const ib=top(inp)+inp.offsetHeight;        // show the question and the input
+    y=Math.max(top(card)-8, ib-vv.height+16);}
+  else y=top(card)-8;
+  window.scrollTo(0,Math.max(0,y));
+}
+if(window.visualViewport) window.visualViewport.addEventListener("resize",()=>setTimeout(fitKb,30));
+render();
+</script>
+
+</html>
