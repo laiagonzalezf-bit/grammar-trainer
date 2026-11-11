@@ -788,6 +788,24 @@ const EXTRA8={r15:[
  G("Her success has a lot to ___ with hard work.",["do"],"<b>have a lot to do with</b> = tener mucho que ver con."),
  C("I think it has less to do with age and more to do ___ habits.",["of","with","to"],"with","<b>have less to do with X and more to do with Y</b>: muy útil en el Speaking Part 3.")]};
 RULES.forEach(r=>{if(EXTRA8[r.id]) r.items.push(...EXTRA8[r.id])});
+const EXTRA9={
+r15:[
+ C("I can ___ you that the exam is not as hard as it seems.",["ensure","assure","insure"],"assure","<b>assure someone (that)</b> = asegurar a alguien, para tranquilizarle. <i>Ensure</i> = garantizar que algo pase. <i>Insure</i> = asegurar con un seguro."),
+ C("Schools must ___ that every child learns to read.",["assure","ensure","insure"],"ensure","<b>ensure (that)</b> = garantizar que algo ocurra. Con <i>assure</i> hace falta una persona: <i>assure <b>parents</b> that…</i>"),
+ T("Te aseguro que lo haré.",[["assure you"]],[],"I assure you (that) I will do it.","<b>I assure you (that)…</b> = te aseguro que… (siempre con la persona detrás)."),
+ C("I'm writing ___ my colleagues.",["in behalf","on behalf of","on behalf"],"on behalf of","<b>on behalf of</b> + alguien = en nombre de / de parte de."),
+ T("Te escribo en nombre de mi escuela.",[["on behalf of"]],["in behalf","on behalf my"],"I am writing to you on behalf of my school.","<b>on behalf of</b> + organización o persona."),
+ G("She accepted the award ___ behalf of her team.",["on"],"<b>on behalf of</b>. También <i>on my behalf</i> = en mi nombre."),
+ F("There was a dramatic rose in sales.",[["dramatic rise"]],["dramatic rose"],"There was a dramatic rise in sales.","Sustantivo = <b>a rise</b>. <i>Rose</i> es el pasado del verbo (o la flor 🌹)."),
+ C("Sales rose ___ in 2020.",["dramatical","dramatically","dramaticly"],"dramatically","Adverbio de <i>dramatic</i> = <b>dramatically</b> (-ally).")],
+r1:[
+ C("The government ___ taxes last year.",["rose","raised","risen"],"raised","<b>raise</b> + algo (levantar/subir algo): raise – <b>raised</b> – raised."),
+ C("Prices have ___ sharply since 2020.",["raised","risen","rose"],"risen","<b>rise</b> (subir solo): rise – rose – <b>risen</b>."),
+ C("Your hand is ___ when you want to speak.",["risen","raised","rose"],"raised","Alguien la levanta → <b>raise</b> → <i>is raised</i>."),
+ G("I was ___ up in Barcelona. (criarse)",["brought"],"<b>bring up</b> = criar: bring – <b>brought</b> – brought. Ojo: <i>bought</i> es de <i>buy</i>."),
+ C("She ___ an interesting point in the meeting.",["bought up","brought up","bringed up"],"brought up","<b>bring up</b> = sacar un tema. Pasado: <b>brought up</b>.")]
+};
+RULES.forEach(r=>{if(EXTRA9[r.id]) r.items.push(...EXTRA9[r.id])});
 RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
 const ALL=RULES.flatMap(r=>r.items);
 const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
