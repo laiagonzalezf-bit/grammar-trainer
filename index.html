@@ -1021,7 +1021,7 @@ function render(){
       <p class="muted">Cada sesión elige 10 frases distintas de un banco de ${r.items.length}, empezando por las que más te cuestan. Léela una vez y luego intenta los ejercicios <b>sin volver a mirarla</b>. Recordar por ti misma es lo que fija la regla.</p>
       <div class="row"><button class="primary" id="go">Empezar (10 ejercicios)</button></div></div>`;
     document.getElementById("h").onclick=home;
-    document.getElementById("go").onclick=()=>{S.stage="q";render()};
+    document.getElementById("go").onclick=()=>{S.stage="q";render()};setTimeout(()=>{const g=document.getElementById("go");if(g)g.focus()},0);
     return;
   }
   if(S.mode==="endless"&&!S.ended&&S.queue.length<3&&!S.answered) refillEndless();
@@ -1108,6 +1108,7 @@ function render(){
       if((it.t==="fix"||it.t==="ok")&&(lv==="ok"||lv==="="))return answer("",true);
       answer(v,false)};
     const ok=document.getElementById("okb"); if(ok) ok.onclick=()=>answer("",true);
+    if(it.t==="choose"){inp.oninput=()=>{const lv=inp.value.trim().toLowerCase();const k="123456".indexOf(lv)>=0?+lv-1:"abcdef".indexOf(lv);if(lv&&k>=0&&k<it.opts.length)answer(it.opts[k],false)}}
     focusNow("in");}
   const nx=document.getElementById("nx"); if(nx){nx.onclick=next}
   const kf=document.getElementById("kf");
@@ -1133,6 +1134,15 @@ function fitKb(){
   window.scrollTo(0,Math.max(0,y));
 }
 if(window.visualViewport) window.visualViewport.addEventListener("resize",()=>setTimeout(fitKb,30));
+// Keyboard everywhere: number keys pick an option, Enter starts / goes to the next one
+document.addEventListener("keydown",e=>{
+  if(!S||e.metaKey||e.ctrlKey||e.altKey)return;
+  const tag=(document.activeElement&&document.activeElement.tagName)||"";if(tag==="INPUT"||tag==="TEXTAREA")return;
+  if(S.stage==="tip"&&e.key==="Enter"){e.preventDefault();S.stage="q";render();return}
+  const it=S.cur&&ALL.find(i=>i.id===S.cur);if(!it)return;
+  if(!S.answered&&it.t==="choose"){const k="123456".indexOf(e.key);if(k>=0&&k<it.opts.length){e.preventDefault();answer(it.opts[k],false)}return}
+  if(S.answered&&e.key==="Enter"){e.preventDefault();next()}
+});
 render();
 </script>
 
