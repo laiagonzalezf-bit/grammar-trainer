@@ -782,6 +782,12 @@ RULES.push({id:"r28",name:"28 · Bloques para parafrasear",tip:["Te doy un trozo
  A("use the internet",["go online","access the internet","browse the web","be online","use the web"]),
  A("should",["ought to","need to","must","have a responsibility to","have a duty to"])
 ]});
+const EXTRA8={r15:[
+ F("This problem takes nothing with technology.",[["has nothing to do with"]],["takes nothing with"],"This problem has nothing to do with technology.","«No tiene nada que ver con» = <b>has nothing to do with</b>."),
+ T("Esto no tiene nada que ver con la edad.",[["has nothing to do with"],["age"]],["takes nothing"],"This has nothing to do with age.","<b>have nothing to do with</b>."),
+ G("Her success has a lot to ___ with hard work.",["do"],"<b>have a lot to do with</b> = tener mucho que ver con."),
+ C("I think it has less to do with age and more to do ___ habits.",["of","with","to"],"with","<b>have less to do with X and more to do with Y</b>: muy útil en el Speaking Part 3.")]};
+RULES.forEach(r=>{if(EXTRA8[r.id]) r.items.push(...EXTRA8[r.id])});
 RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
 const ALL=RULES.flatMap(r=>r.items);
 const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
