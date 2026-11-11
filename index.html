@@ -917,6 +917,34 @@ function fixTypos(it,val){
     if(best&&bd<=(w.length>=6?2:1)){fixes.push([w,best]);return best}return w});
   return {text:out.join(" "),fixes};
 }
+// ---------- Claude corrections (only inside claude.ai, where the "sample" capability exists) ----------
+let SAMPLE=null;
+try{if(window.claude&&window.claude.use)window.claude.use("sample").then(x=>{SAMPLE=x;if(S&&S.cur)render()}).catch(()=>{})}catch(e){}
+async function askClaude(val){
+  const it=ALL.find(i=>i.id===S.cur); if(!SAMPLE||!it) return;
+  S.ai={loading:true}; render();
+  const refs=(it.models||[it.model||it.a]).filter(Boolean).join(" | ");
+  const task={alt:"Write another way of saying the given chunk, with exactly the same meaning",para:"Paraphrase the sentence for an IELTS introduction, keeping exactly the same meaning",fix:"Rewrite the sentence correcting its error",ok:"Rewrite the sentence correcting its error (or say it is already correct)",tr:"Translate the Spanish sentence into English",gap:"Fill the gap (the student may write only the missing word or the whole sentence)",choose:"Choose the correct option"}[it.t]||"Answer the exercise";
+  const prompt=`You are a strict but kind IELTS examiner checking a Spanish-speaking student's answer in a grammar trainer. American English.
+Exercise type: ${task}.
+Exercise: ${it.orig||it.q.replace(/<[^>]+>/g,"")}
+Reference answer(s): ${refs}
+Student's answer: ${val}
+Decide if the student's answer is acceptable: correct grammar, correct spelling (any spelling mistake makes it NOT acceptable), natural English, and the same meaning as required (no information added or lost). It does not need to match the references.
+Reply ONLY with JSON: {"ok": true or false, "feedback": "1-2 short sentences in Spanish explaining why, with simple examples, no grammar jargon", "better": "a corrected or more natural version in English, or empty string if already perfect"}`;
+  try{const r=await SAMPLE.json(prompt,{modelTier:"default"});S.ai={ok:!!(r&&r.ok),feedback:String((r&&r.feedback)||""),better:String((r&&r.better)||"")}}
+  catch(e){S.ai={error:e&&e.code==="rate_limited"?"Demasiadas consultas seguidas: espera un poco.":e&&e.code==="not_granted"?"No has dado permiso para consultar a Claude.":"No he podido consultar a Claude ahora."}}
+  // self-assessed items: Claude decides
+  if(!S.answered&&(it.t==="para"||it.t==="alt")&&S.ai&&!S.ai.error){const keep=S.ai;answer(val,false,keep.ok);S.ai=keep}
+  render();
+}
+function aiHTML(){if(!S.ai)return"";if(S.ai.loading)return `<div class="reminder">Claude está mirando tu respuesta…</div>`;if(S.ai.error)return `<div class="reminder">${esc(S.ai.error)}</div>`;
+  return `<div class="reminder"><b>Claude: ${S.ai.ok?"✓ es correcta":"✗ no es correcta"}.</b> ${esc(S.ai.feedback)}${S.ai.better?`<br>Versión mejor: <b>${esc(S.ai.better)}</b>`:""}${S.answered&&!S.lastOk&&S.ai.ok&&S.override?`<div class="row" style="margin-top:8px"><button id="aiok">Contar como correcta</button></div>`:""}</div>`}
+function aiOverride(){const it=ALL.find(i=>i.id===S.cur);if(!it||!S.override)return;
+  S.first[it.id]=true;const b=S.override.box||0;box[it.id]=b;if(S.override.day)days[it.id]=S.override.day;else delete days[it.id];
+  if(b===0||days[it.id]!==today()){box[it.id]=Math.min(b+1,4);days[it.id]=today()}save();
+  const l=S.log[it.rule];if(l){l.bad--;l.ok++}const k=S.queue.indexOf(it.id);if(k>=0)S.queue.splice(k,1);
+  S.lastOk=true;S.override=null;render()}
 function answer(val,claimOk,forced){
   if(S.answered) return;
   const it=ALL.find(i=>i.id===S.cur);
@@ -938,6 +966,7 @@ function answer(val,claimOk,forced){
     }
   }
   S.answered=true; S.lastOk=ok; S.lastVal=claimOk?"(Ya es correcta)":val;
+  S.ai=null; S.override=!(it.id in S.first)?{box:box[it.id],day:days[it.id]}:null;
   if(!(it.id in S.first)){S.first[it.id]=ok;
     // learning = 1 correct; mastered = correct again on a DIFFERENT day; any miss resets
     if(!ok){box[it.id]=0;delete days[it.id]}
@@ -1031,14 +1060,14 @@ function render(){
         <span class="muted">Palabras importantes copiadas de la pregunta: <b>${pct}%</b>${pct>60?" · intenta cambiar más (sinónimos, forma de palabra, estructura)":pct<=40?" · ¡bien, has cambiado bastante!":""}${copied.length?" ("+copied.map(esc).join(", ")+")":""}</span></div>
         <div class="reminder"><b>Paráfrasis modelo (nivel 7+):</b><ul>${it.models.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>
         <b>Comprueba la tuya:</b><ul><li>¿Has cambiado 2–3 cosas (marco, sinónimos, forma, estructura)?</li><li>¿Significa <b>exactamente</b> lo mismo?</li><li>¿La gramática y la ortografía están bien?</li></ul></div>
-        ${S.answered?"":`<div class="row"><button class="primary" id="pgood">✓ La mía está bien</button><button id="pbad">✗ Necesito repasarla</button></div>
-        <form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: 1 = está bien · 2 = repasarla" aria-label="1 está bien, 2 repasarla"></form>`}`;
+        ${S.answered?"":`<div class="row"><button class="primary" id="pgood">✓ La mía está bien</button><button id="pbad">✗ Necesito repasarla</button>${SAMPLE?`<button id="aib">✨ Que lo corrija Claude</button>`:""}</div>${aiHTML()}
+        <form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: 1 = está bien · 2 = repasarla${SAMPLE?" · 3 = Claude":""}" aria-label="1 está bien, 2 repasarla"></form>`}`;
     }
   }else if(it.t==="alt"&&S.paraVal&&!S.answered){
     body=`<div class="fb" style="background:var(--chip)"><span><b>Tu versión:</b> ${esc(S.paraVal)}</span><span class="muted">No está en mi lista. Compárala: ¿significa <b>exactamente</b> lo mismo y suena natural?</span></div>
       <div class="reminder"><b>Alternativas que conozco:</b><ul>${it.models.map(m=>`<li>${esc(m)}</li>`).join("")}</ul></div>
-      <div class="row"><button class="primary" id="pgood">✓ La mía también vale</button><button id="pbad">✗ No, me equivoqué</button></div>
-      <form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: 1 = vale · 2 = me equivoqué" aria-label="1 vale, 2 me equivoqué"></form>`;
+      <div class="row"><button class="primary" id="pgood">✓ La mía también vale</button><button id="pbad">✗ No, me equivoqué</button>${SAMPLE?`<button id="aib">✨ Que lo corrija Claude</button>`:""}</div>${aiHTML()}
+      <form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: 1 = vale · 2 = me equivoqué${SAMPLE?" · 3 = Claude":""}" aria-label="1 vale, 2 me equivoqué"></form>`;
   }else if(it.t==="choose"){
     body=`<div class="opts">${it.opts.map(o=>{let cls="";if(S.answered){if(o===it.a)cls="right";else if(o===S.lastVal)cls="wrong"}return `<button data-o="${esc(o)}" class="${cls}" ${S.answered?"disabled":""}><span class="muted">${it.opts.indexOf(o)+1} ·</span> ${esc(o)}</button>`}).join("")}</div>${S.answered?"":`<form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: escribe ${it.opts.map((_,i)=>i+1).join(", ")} y pulsa Intro" aria-label="Número de la opción"></form>`}`;
   }else{
@@ -1050,11 +1079,11 @@ function render(){
   let fb="";
   if(S.answered){
     const model=it.t==="choose"?it.a:it.model;
-    if(it.t==="para"){fb=`<div class="fb ${S.lastOk?"good":"bad"}"><span class="h">${S.lastOk?"✓ Bien hecho":"✗ Para repasar"}</span><span class="muted">${S.lastOk?"Sigue así: una buena paráfrasis vale puntos de vocabulario en cada introducción.":"Volverá a salir dentro de unas preguntas. Prueba otra técnica la próxima vez."}</span></div><div class="row"><button class="primary" id="nx">Siguiente →</button></div><form id="kf"><input type="text" id="kin" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="Pulsa Intro para la siguiente" aria-label="Pulsa Intro para la siguiente"></form>`}else{
+    if(it.t==="para"){fb=`<div class="fb ${S.lastOk?"good":"bad"}"><span class="h">${S.lastOk?"✓ Bien hecho":"✗ Para repasar"}</span><span class="muted">${S.lastOk?"Sigue así: una buena paráfrasis vale puntos de vocabulario en cada introducción.":"Volverá a salir dentro de unas preguntas. Prueba otra técnica la próxima vez."}</span></div>${aiHTML()}<div class="row"><button class="primary" id="nx">Siguiente →</button></div><form id="kf"><input type="text" id="kin" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="Pulsa Intro para la siguiente${SAMPLE&&!S.lastOk?" (o escribe ? para preguntar a Claude)":""}" aria-label="Pulsa Intro para la siguiente"></form>`}else{
     fb=`<div class="fb ${S.lastOk?"good":"bad"}"><span class="h">${S.lastOk?"✓ Correcto":(S.typos&&S.typos.length?"✗ Error de ortografía":"✗ Todavía no")}</span>${S.typos&&S.typos.length?`<span>La gramática está bien, pero hay una palabra mal escrita: ${S.typos.map(([a,b])=>`<b>${esc(a)}</b> → <b>${esc(b)}</b>`).join(", ")}. En el examen también cuenta como error.</span>`:""}${S.gapNote?`<span>El hueco está bien, pero has cambiado otra palabra de la frase: ${S.gapNote.map(([a,b])=>b?`<b>${esc(a)}</b> → <b>${esc(b)}</b>`:`<b>${esc(a)}</b>`).join(", ")}.</span>`:""}
       ${S.lastOk?"":`<span>Tu respuesta: <b>${esc(S.lastVal)}</b></span><span>Respuesta correcta: <b>${esc(model)}</b></span>`}
-      <span>${it.why}</span>${whyNotHTML(it)}${S.lastOk?"":`<span class="muted">Volverá a salir dentro de unas preguntas.</span>`}</div>
-      <div class="row"><button class="primary" id="nx">Siguiente →</button></div><form id="kf"><input type="text" id="kin" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="Pulsa Intro para la siguiente" aria-label="Pulsa Intro para la siguiente"></form>`;}
+      <span>${it.why}</span>${whyNotHTML(it)}${S.lastOk?"":`<span class="muted">Volverá a salir dentro de unas preguntas.</span>`}</div>${aiHTML()}${SAMPLE&&!S.ai&&!S.lastOk&&it.t!=="choose"?`<div class="row"><button id="aib">✨ Pregunta a Claude si la mía vale</button></div>`:""}
+      <div class="row"><button class="primary" id="nx">Siguiente →</button></div><form id="kf"><input type="text" id="kin" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="Pulsa Intro para la siguiente${SAMPLE&&!S.lastOk?" (o escribe ? para preguntar a Claude)":""}" aria-label="Pulsa Intro para la siguiente"></form>`;}
   }
   app.innerHTML=`<div class="top"><button class="small" id="h">← Reglas</button>${S.mode==="endless"?(()=>{const f=Object.values(S.first),n=f.length,g=f.filter(Boolean).length;return `<span>${n} hechos${n?` · ${Math.round(g/n*100)}% a la primera`:""}</span><button class="small" id="endb">Terminar</button>`})():`<span>${esc(S.title)} · quedan ${left}</span>`}</div>
     <div class="card"><span class="tag">${esc(r.name)}</span><span class="kind">${KIND[it.t]}</span>
@@ -1075,14 +1104,16 @@ function render(){
     f.onsubmit=e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;const lv=v.toLowerCase();
       if(it.t==="choose"){const k="123456".indexOf(lv)>=0?+lv-1:"abcdef".indexOf(lv);if(k>=0&&k<it.opts.length)answer(it.opts[k],false);else{inp.value="";inp.placeholder="Escribe solo el número: "+it.opts.map((_,i)=>i+1).join(", ")}return}
       if(it.t==="alt"&&!S.paraVal){if(N(v)!==N(it.orig)&&!check(it,v)){S.paraVal=v;render();return}return answer(v,false)}
-      if(it.t==="para"||it.t==="alt"){if(lv==="1"||lv==="✓")answer(S.paraVal,false,true);else if(lv==="2"||lv==="✗")answer(S.paraVal,false,false);else{inp.value="";inp.placeholder="Escribe 1 o 2"}return}
+      if(it.t==="para"||it.t==="alt"){if(lv==="3"&&SAMPLE){askClaude(S.paraVal);return}if(lv==="1"||lv==="✓")answer(S.paraVal,false,true);else if(lv==="2"||lv==="✗")answer(S.paraVal,false,false);else{inp.value="";inp.placeholder="Escribe 1 o 2"}return}
       if((it.t==="fix"||it.t==="ok")&&(lv==="ok"||lv==="="))return answer("",true);
       answer(v,false)};
     const ok=document.getElementById("okb"); if(ok) ok.onclick=()=>answer("",true);
     focusNow("in");}
   const nx=document.getElementById("nx"); if(nx){nx.onclick=next}
   const kf=document.getElementById("kf");
-  if(kf){kf.onsubmit=e=>{e.preventDefault();next()};const k=focusNow("kin");
+  const aib=document.getElementById("aib"); if(aib) aib.onclick=()=>askClaude(S.answered?S.lastVal:S.paraVal);
+  const aiok=document.getElementById("aiok"); if(aiok) aiok.onclick=aiOverride;
+  if(kf){kf.onsubmit=e=>{e.preventDefault();const kv=document.getElementById("kin").value.trim();if(kv==="?"&&SAMPLE&&!S.ai&&!S.lastOk){document.getElementById("kin").value="";askClaude(S.lastVal);return}next()};const k=focusNow("kin");
   }
   [60,350,700].forEach(t=>setTimeout(fitKb,t));
 }
