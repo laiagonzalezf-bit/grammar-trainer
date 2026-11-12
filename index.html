@@ -23,6 +23,9 @@
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
 .wrap{max-width:680px;margin:0 auto;display:grid;gap:16px}
+/* Bigger on laptop / desktop screens */
+@media (min-width:1000px){.wrap{max-width:760px;zoom:1.25}}
+@media (min-width:1400px){.wrap{max-width:820px;zoom:1.4}}
 h1{font-family:var(--display);font-weight:600;font-size:clamp(24px,5vw,32px);margin:0;text-wrap:balance}
 h2{font-family:var(--display);font-weight:600;font-size:21px;margin:0}
 p{margin:0}
@@ -71,8 +74,9 @@ const OK=(q,why)=>({t:"ok",q,model:q,why});
 const T=(q,must,not,model,why)=>({t:"tr",q,must,not,model,why});
 const P=(q,models)=>({t:"para",q,models,model:models[0],why:"Comprueba: ¿has cambiado 2–3 cosas? ¿Significa exactamente lo mismo? ¿La gramática es correcta?"});
 const A=(orig,acc,note)=>({t:"alt",orig,q:orig+"  →  …",acc:acc.map(N),models:acc,model:acc[0],why:(note?note+"<br>":"")+"Alternativas: <b>"+acc.join("</b> · <b>")+"</b>"});
-const KIND={alt:"Escribe otra forma de decirlo (sin repetir las mismas palabras)",choose:"Elige la opción correcta",gap:"Escribe solo la palabra que falta (o la frase completa)",fix:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",ok:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",tr:"Tradúcela al inglés",para:"Parafrasea la frase, como en la introducción del ensayo"};
-const ORDER={alt:1,choose:0,gap:1,fix:2,ok:2,tr:3,para:3};
+const D=(text,why)=>({t:"dict",q:"🎧 Escucha y escribe la frase",model:text,why:why||"Escribe exactamente lo que oyes: en el DET cuenta la ortografía."});
+const KIND={dict:"Escucha y escribe la frase exacta (puedes oírla hasta 3 veces)",alt:"Escribe otra forma de decirlo (sin repetir las mismas palabras)",choose:"Elige la opción correcta",gap:"Escribe solo la palabra que falta (o la frase completa)",fix:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",ok:"Esta frase tiene un error: reescríbela bien (o pulsa «Ya es correcta»)",tr:"Tradúcela al inglés",para:"Parafrasea la frase, como en la introducción del ensayo"};
+const ORDER={dict:2,alt:1,choose:0,gap:1,fix:2,ok:2,tr:3,para:3};
 
 // ---------- content ----------
 const RULES=[
@@ -806,6 +810,82 @@ r1:[
  C("She ___ an interesting point in the meeting.",["bought up","brought up","bringed up"],"brought up","<b>bring up</b> = sacar un tema. Pasado: <b>brought up</b>.")]
 };
 RULES.forEach(r=>{if(EXTRA9[r.id]) r.items.push(...EXTRA9[r.id])});
+RULES.push({id:"r29",name:"29 · DET: ¿existe la palabra?",tip:["Como en <b>Read and Select</b> del DET: decide si la palabra existe. En el examen tienes 5 segundos.","Las inventadas se parecen a palabras reales; muchas son <b>errores de ortografía</b> típicos (<i>necesary, sucessful</i>).","Pronúnciala en silencio: si no te suena nada, probablemente no existe."],items:[
+ C("¿Existe esta palabra en inglés? «thorough»",["Sí, existe","No, es inventada"],"Sí, existe","<b>thorough</b> existe: significa «minucioso»."),
+ C("¿Existe esta palabra en inglés? «ubiquitous»",["Sí, existe","No, es inventada"],"Sí, existe","<b>ubiquitous</b> existe: significa «omnipresente»."),
+ C("¿Existe esta palabra en inglés? «feasible»",["Sí, existe","No, es inventada"],"Sí, existe","<b>feasible</b> existe: significa «viable»."),
+ C("¿Existe esta palabra en inglés? «scarce»",["Sí, existe","No, es inventada"],"Sí, existe","<b>scarce</b> existe: significa «escaso»."),
+ C("¿Existe esta palabra en inglés? «tedious»",["Sí, existe","No, es inventada"],"Sí, existe","<b>tedious</b> existe: significa «tedioso»."),
+ C("¿Existe esta palabra en inglés? «prevalent»",["Sí, existe","No, es inventada"],"Sí, existe","<b>prevalent</b> existe: significa «extendido»."),
+ C("¿Existe esta palabra en inglés? «mundane»",["Sí, existe","No, es inventada"],"Sí, existe","<b>mundane</b> existe: significa «rutinario»."),
+ C("¿Existe esta palabra en inglés? «reluctant»",["Sí, existe","No, es inventada"],"Sí, existe","<b>reluctant</b> existe: significa «reacio»."),
+ C("¿Existe esta palabra en inglés? «meticulous»",["Sí, existe","No, es inventada"],"Sí, existe","<b>meticulous</b> existe: significa «meticuloso»."),
+ C("¿Existe esta palabra en inglés? «inherent»",["Sí, existe","No, es inventada"],"Sí, existe","<b>inherent</b> existe: significa «inherente»."),
+ C("¿Existe esta palabra en inglés? «cumbersome»",["Sí, existe","No, es inventada"],"Sí, existe","<b>cumbersome</b> existe: significa «engorroso»."),
+ C("¿Existe esta palabra en inglés? «plausible»",["Sí, existe","No, es inventada"],"Sí, existe","<b>plausible</b> existe: significa «verosímil»."),
+ C("¿Existe esta palabra en inglés? «abundant»",["Sí, existe","No, es inventada"],"Sí, existe","<b>abundant</b> existe: significa «abundante»."),
+ C("¿Existe esta palabra en inglés? «notion»",["Sí, existe","No, es inventada"],"Sí, existe","<b>notion</b> existe: significa «noción, idea»."),
+ C("¿Existe esta palabra en inglés? «hinder»",["Sí, existe","No, es inventada"],"Sí, existe","<b>hinder</b> existe: significa «dificultar»."),
+ C("¿Existe esta palabra en inglés? «foster»",["Sí, existe","No, es inventada"],"Sí, existe","<b>foster</b> existe: significa «fomentar»."),
+ C("¿Existe esta palabra en inglés? «thrive»",["Sí, existe","No, es inventada"],"Sí, existe","<b>thrive</b> existe: significa «prosperar»."),
+ C("¿Existe esta palabra en inglés? «subtle»",["Sí, existe","No, es inventada"],"Sí, existe","<b>subtle</b> existe: significa «sutil»."),
+ C("¿Existe esta palabra en inglés? «wholesome»",["Sí, existe","No, es inventada"],"Sí, existe","<b>wholesome</b> existe: significa «sano»."),
+ C("¿Existe esta palabra en inglés? «diligent»",["Sí, existe","No, es inventada"],"Sí, existe","<b>diligent</b> existe: significa «aplicado»."),
+ C("¿Existe esta palabra en inglés? «recognation»",["Sí, existe","No, es inventada"],"No, es inventada","<i>recognation</i> no existe: la palabra real es <b>recognition</b>."),
+ C("¿Existe esta palabra en inglés? «attemption»",["Sí, existe","No, es inventada"],"No, es inventada","<i>attemption</i> no existe: la palabra real es <b>attempt</b>."),
+ C("¿Existe esta palabra en inglés? «conspiction»",["Sí, existe","No, es inventada"],"No, es inventada","<i>conspiction</i> no existe: (no existe; quizá <i>conspiracy</i>)."),
+ C("¿Existe esta palabra en inglés? «nolitary»",["Sí, existe","No, es inventada"],"No, es inventada","<i>nolitary</i> no existe: (no existe)."),
+ C("¿Existe esta palabra en inglés? «fremble»",["Sí, existe","No, es inventada"],"No, es inventada","<i>fremble</i> no existe: (no existe; quizá <i>tremble</i>)."),
+ C("¿Existe esta palabra en inglés? «implorance»",["Sí, existe","No, es inventada"],"No, es inventada","<i>implorance</i> no existe: (no existe; quizá <i>importance</i>)."),
+ C("¿Existe esta palabra en inglés? «dovelopment»",["Sí, existe","No, es inventada"],"No, es inventada","<i>dovelopment</i> no existe: la palabra real es <b>development</b>."),
+ C("¿Existe esta palabra en inglés? «stragetic»",["Sí, existe","No, es inventada"],"No, es inventada","<i>stragetic</i> no existe: la palabra real es <b>strategic</b>."),
+ C("¿Existe esta palabra en inglés? «enviromental»",["Sí, existe","No, es inventada"],"No, es inventada","<i>enviromental</i> no existe: la palabra real es <b>environmental</b>."),
+ C("¿Existe esta palabra en inglés? «necesary»",["Sí, existe","No, es inventada"],"No, es inventada","<i>necesary</i> no existe: la palabra real es <b>necessary</b>."),
+ C("¿Existe esta palabra en inglés? «beginer»",["Sí, existe","No, es inventada"],"No, es inventada","<i>beginer</i> no existe: la palabra real es <b>beginner</b>."),
+ C("¿Existe esta palabra en inglés? «sucessful»",["Sí, existe","No, es inventada"],"No, es inventada","<i>sucessful</i> no existe: la palabra real es <b>successful</b>."),
+ C("¿Existe esta palabra en inglés? «acommodation»",["Sí, existe","No, es inventada"],"No, es inventada","<i>acommodation</i> no existe: la palabra real es <b>accommodation</b>."),
+ C("¿Existe esta palabra en inglés? «plensive»",["Sí, existe","No, es inventada"],"No, es inventada","<i>plensive</i> no existe: (no existe)."),
+ C("¿Existe esta palabra en inglés? «understandment»",["Sí, existe","No, es inventada"],"No, es inventada","<i>understandment</i> no existe: la palabra real es <b>understanding</b>."),
+ C("¿Existe esta palabra en inglés? «mantainance»",["Sí, existe","No, es inventada"],"No, es inventada","<i>mantainance</i> no existe: la palabra real es <b>maintenance</b>."),
+ C("¿Existe esta palabra en inglés? «refusement»",["Sí, existe","No, es inventada"],"No, es inventada","<i>refusement</i> no existe: la palabra real es <b>refusal</b>."),
+ C("¿Existe esta palabra en inglés? «discoverance»",["Sí, existe","No, es inventada"],"No, es inventada","<i>discoverance</i> no existe: la palabra real es <b>discovery</b>.")]});
+RULES.push({id:"r30",name:"30 · DET: completa la palabra",tip:["Como en <b>Fill in the Blanks</b> y <b>Read and Complete</b>: falta el final de la palabra.","Puedes escribir solo lo que falta o la palabra entera. Cuenta la ortografía.","Aquí están tus palabras difíciles: <i>usually, across, necessary, environment, accommodation…</i>"],items:[
+ G("Many people u___ly check their phones before breakfast.",["usually", "sual"],"<b>usually</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Remote work has increased acr___ many countries.",["across", "oss"],"<b>across</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Ob___ty is increasingly common among children.",["obesity", "esi"],"<b>obesity</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("It is nec____ary to reduce traffic in cities.",["necessary", "ess"],"<b>necessary</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("The env______ent should be protected for future generations.",["environment", "ironm"],"<b>environment</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("The gov____ent should invest in public transport.",["government", "ernm"],"<b>government</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Finding acc_______tion in big cities is expensive.",["accommodation", "ommoda"],"<b>accommodation</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Music is esp_____ly important for young children.",["especially", "ecial"],"<b>especially</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("At the beg_____ng, the task seemed impossible.",["beginning", "inni"],"<b>beginning</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Technology has become part of our daily lives; it has bec___ essential.",["become", "ome"],"<b>become</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("The dev______ent of new skills takes time.",["development", "elopm"],"<b>development</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("She was very succ____ul in her career.",["successful", "essf"],"<b>successful</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("These two problems are completely diff____nt.",["different", "ere"],"<b>different</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Students should keep work and leisure sep____te.",["separate", "ara"],"<b>separate</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("I will def____ly apply again next year.",["definitely", "inite"],"<b>definitely</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Did you rec____ my email?",["receive", "eive"],"<b>receive</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Many people bel____ that money brings happiness.",["believe", "ieve"],"<b>believe</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("The accident occ____ed late at night.",["occurred", "urr"],"<b>occurred</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Wait un___ the end of the recording.",["until", "til"],"<b>until</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía."),
+ G("Online learning can be a conv_____nt option.",["convenient", "enie"],"<b>convenient</b>. En el DET escribes solo la parte que falta, sin faltas de ortografía.")]});
+RULES.push({id:"r31",name:"31 · DET: dictado",tip:["Como en <b>Listen and Type</b>: escucha la frase y escríbela entera. Puedes oírla hasta <b>3 veces</b>.","Escribe primero lo que oigas y vuelve a escucharla para revisar.","Revisa la ortografía y los finales: <i>-s, -ed</i>, artículos."],items:[
+ D("Many students find it difficult to manage their time."),
+ D("The government should invest more in public transportation."),
+ D("Learning a second language can open many doors."),
+ D("The library will be closed until further notice."),
+ D("Please submit your assignment before the deadline."),
+ D("Remote work has become increasingly common across many countries."),
+ D("The number of people who live alone is increasing."),
+ D("Regular exercise has a positive effect on mental health."),
+ D("I would appreciate it if you could send me more information."),
+ D("Our professor recommended three articles for next week."),
+ D("Technology has changed the way we communicate with each other."),
+ D("The museum offers free entry on the first Sunday of every month."),
+ D("Many experts believe that the situation will improve soon."),
+ D("She has been teaching music for more than six years."),
+ D("The results of the survey were surprisingly positive.")]});
 RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
 const ALL=RULES.flatMap(r=>r.items);
 const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
@@ -928,6 +1008,7 @@ function home(){S=null;render()}
 function check(it,val,claimOk){
   if(it.t==="choose") return val===it.a;
   if(it.t==="alt") return it.acc.includes(N(val).replace(/^the /,"the "));
+  if(it.t==="dict") return N(val)===N(it.model);
   if(it.t==="gap"){
     if(it.acc.includes(N(val))) return true;
     const base=it.q.replace(/\s*\([^)]*\)\s*$/,"");
@@ -996,6 +1077,13 @@ function aiOverride(){const it=ALL.find(i=>i.id===S.cur);if(!it)return;
     if(b===0||days[it.id]!==today()){box[it.id]=Math.min(b+1,4);days[it.id]=today()}save()}
   const l=S.log[it.rule];if(l){l.bad--;l.ok++}const k=S.queue.indexOf(it.id);if(k>=0)S.queue.splice(k,1);
   S.lastOk=true;S.override=null;render()}
+function speakItem(it){
+  if(S.playsFor!==it.id){S.playsFor=it.id;S.plays=0}
+  if(S.plays>=3)return; S.plays++;
+  try{const sy=window.speechSynthesis;if(!sy)return;sy.cancel();const u=new SpeechSynthesisUtterance(it.model);u.lang="en-US";u.rate=0.95;
+    const v=(sy.getVoices()||[]).find(v=>/en[-_]US/i.test(v.lang));if(v)u.voice=v;sy.speak(u)}catch(e){}
+  const b=document.getElementById("play");if(b){const left=3-S.plays;b.textContent="▶ Escuchar ("+left+" de 3)";if(left<=0)b.disabled=true}
+}
 function answer(val,claimOk,forced){
   if(S.answered) return;
   const it=ALL.find(i=>i.id===S.cur);
@@ -1122,11 +1210,12 @@ function render(){
   }else if(it.t==="choose"){
     body=`<div class="opts">${it.opts.map(o=>{let cls="";if(S.answered){if(o===it.a)cls="right";else if(o===S.lastVal)cls="wrong"}return `<button data-o="${esc(o)}" class="${cls}" ${S.answered?"disabled":""}><span class="muted">${it.opts.indexOf(o)+1} ·</span> ${esc(o)}</button>`}).join("")}</div>${S.answered?"":`<form id="f"><input type="text" id="in" style="width:100%;font-family:var(--body);font-size:17px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Teclado: escribe ${it.opts.map((_,i)=>i+1).join(", ")} y pulsa Intro" aria-label="Número de la opción"></form>`}`;
   }else{
-    const ph=it.t==="alt"?"Escribe tu alternativa…":it.t==="gap"?"Escribe la palabra…":it.t==="tr"?"Escribe la frase en inglés…":"Escribe la frase corregida…";
+    const ph=it.t==="dict"?"Escribe lo que oyes… (Intro sin texto = volver a oírla)":it.t==="alt"?"Escribe tu alternativa…":it.t==="gap"?"Escribe la palabra…":it.t==="tr"?"Escribe la frase en inglés…":"Escribe la frase corregida…";
     const ph2=ph+((it.t==="fix"||it.t==="ok")?" (o escribe ok si ya es correcta)":"");
     body=S.answered?"":`<form id="f" class="row" style="display:grid;gap:8px"><input type="text" id="in" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="${ph2}" aria-label="${ph}">
       <div class="row"><button class="primary" type="submit" ${S.answered?"disabled":""}>Comprobar</button>${(it.t==="fix"||it.t==="ok")?`<button type="button" id="okb" ${S.answered?"disabled":""}>Ya es correcta</button>`:""}</div></form>`;
   }
+  if(it.t==="dict"&&!S.answered){const left=3-(S.playsFor===it.id?S.plays:0);body=`<div class="row"><button type="button" id="play" ${left<=0?"disabled":""}>▶ Escuchar (${left} de 3)</button></div>`+body}
   let fb="";
   if(S.answered){
     const model=it.t==="choose"?it.a:it.model;
@@ -1152,7 +1241,7 @@ function render(){
   if(it.t==="choose"&&!S.answered) app.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>answer(b.dataset.o,false));
   const f=document.getElementById("f");
   if(f&&!S.answered){const inp=document.getElementById("in");
-    f.onsubmit=e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;const lv=v.toLowerCase();
+    f.onsubmit=e=>{e.preventDefault();const v=inp.value.trim();if(!v){if(it.t==="dict")speakItem(it);return}const lv=v.toLowerCase();
       if(it.t==="choose"){const k="123456".indexOf(lv)>=0?+lv-1:"abcdef".indexOf(lv);if(k>=0&&k<it.opts.length)answer(it.opts[k],false);else{inp.value="";inp.placeholder="Escribe solo el número: "+it.opts.map((_,i)=>i+1).join(", ")}return}
       if(it.t==="alt"&&!S.paraVal){if(N(v)!==N(it.orig)&&!check(it,v)){S.paraVal=v;render();return}return answer(v,false)}
       if(it.t==="para"||it.t==="alt"){if(lv==="3"&&SAMPLE){askClaude(S.paraVal);return}if(lv==="1"||lv==="✓")answer(S.paraVal,false,true);else if(lv==="2"||lv==="✗")answer(S.paraVal,false,false);else{inp.value="";inp.placeholder="Escribe 1 o 2"}return}
@@ -1163,6 +1252,8 @@ function render(){
     focusNow("in");}
   const nx=document.getElementById("nx"); if(nx){nx.onclick=next}
   const kf=document.getElementById("kf");
+  const pl=document.getElementById("play"); if(pl) pl.onclick=()=>{speakItem(it);const i=document.getElementById("in");if(i)i.focus()};
+  if(it.t==="dict"&&!S.answered&&S.playsFor!==it.id) speakItem(it);
   const aib=document.getElementById("aib"); if(aib) aib.onclick=()=>askClaude(S.answered?S.lastVal:S.paraVal);
   const aiok=document.getElementById("aiok"); if(aiok) aiok.onclick=aiOverride;
   if(kf){kf.onsubmit=e=>{e.preventDefault();const kv=document.getElementById("kin").value.trim();if(kv==="?"&&SAMPLE&&!S.ai&&!S.lastOk){document.getElementById("kin").value="";askClaude(S.lastVal);return}next()};const k=focusNow("kin");
