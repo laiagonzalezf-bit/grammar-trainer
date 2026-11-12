@@ -913,6 +913,12 @@ r6:[
  C("The decision was made ___.",["democraticly","democratically","democratical"],"democratically","Adverbios: siempre <b>-ically</b> (excepto <i>publicly</i>).")]
 };
 RULES.forEach(r=>{if(EXTRA11[r.id]) r.items.push(...EXTRA11[r.id])});
+const EXTRA12={r15:[
+ C("The concert ___ was full: more than 2,000 people came.",["venue","avenue","scenario"],"venue","<b>venue</b> = el lugar donde se celebra un concierto, partido o evento (sala, estadio, auditorio)."),
+ G("The Palau de la Música is one of the most beautiful concert ___ in Europe. (salas, lugares)",["venues"],"<b>venue</b> → plural <b>venues</b>. Pronunciación: /ˈven.juː/."),
+ T("El lugar del concierto ha cambiado.",[["venue"]],[],"The venue for the concert has changed.","<b>venue</b> = lugar de un evento."),
+ C("The stage had beautiful ___.",["a lighting","lighting","lightings"],"lighting","<b>lighting</b> es incontable: sin <i>a</i> y sin plural (como <i>information</i>).")]};
+RULES.forEach(r=>{if(EXTRA12[r.id]) r.items.push(...EXTRA12[r.id])});
 RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
 const ALL=RULES.flatMap(r=>r.items);
 const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
