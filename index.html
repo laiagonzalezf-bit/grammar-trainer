@@ -919,6 +919,28 @@ const EXTRA12={r15:[
  T("El lugar del concierto ha cambiado.",[["venue"]],[],"The venue for the concert has changed.","<b>venue</b> = lugar de un evento."),
  C("The stage had beautiful ___.",["a lighting","lighting","lightings"],"lighting","<b>lighting</b> es incontable: sin <i>a</i> y sin plural (como <i>information</i>).")]};
 RULES.forEach(r=>{if(EXTRA12[r.id]) r.items.push(...EXTRA12[r.id])});
+const EXTRA13={
+r8:[
+ C("My sister is studying ___ a master's degree in Law.",["—","for","in"],"for","<b>study for</b> a degree (o <b>do</b> a degree): <i>She is doing a master's degree.</i>"),
+ C("She is the director ___ a primary school in Madrid.",["in","of","at"],"of","Cargo + <b>of</b> + organización: <i>the head of the department, the director of a school</i>. Lugar de trabajo: <i>works <b>at</b> a school</i>."),
+ C("Museums should be accessible ___ everyone.",["for","to","at"],"to","<b>accessible to</b> + personas."),
+ F("A smaller flat would suit better for us.",[["would suit us better","suits us better","would suit us"]],["suit better for","suit for"],"A smaller flat would suit us better.","<b>suit</b> + persona, sin <i>for</i>, y <i>better</i> al final: <i>it suits me better</i>.")],
+r5:[
+ F("He was head of department at a large university.",[["head of the department"]],["head of department at"],"He was the head of the department at a large university.","Cargo concreto → <b>the head of the department</b>.")],
+r15:[
+ C("In my ___ at university, I chose to specialize in music education.",["second grade","second year","second course"],"second year","Universidad: <b>first / second year</b>. <i>Grade</i> = curso escolar en EE. UU. (<i>2nd grade</i> = 2º de primaria)."),
+ T("Estoy en tercero de carrera.",[["third year"]],["grade","course"],"I am in my third year at university.","<b>in my third year</b>."),
+ C("Her trip to Africa ___ her realize how lucky she was.",["did","made","let"],"made","<b>make someone realize</b> = hacer que alguien se dé cuenta. Sin <i>to</i>: <i>made me realize</i>."),
+ F("That conversation made me know that I needed a change.",[["made me realize","made me see","helped me realize","made me understand"]],["made me know"],"That conversation made me realize that I needed a change.","«Me hizo darme cuenta» = <b>made me realize</b>. <i>Made me know</i> no se usa."),
+ C("The streets ___ empty because of the storm.",["where","were","wear"],"were","<b>were</b> = pasado de <i>are</i>. <i>Where</i> = dónde. <i>Wear</i> = llevar ropa."),
+ C("___ did you study before coming here?",["Were","Where","We're"],"Where","<b>Where</b> = dónde. <i>Were</i> = pasado de <i>are</i>. <i>We're</i> = <i>we are</i>."),
+ G("Not everyone has access to music lessons; it is still a priv______ for many families.",["privilege","ilege"],"<b>privilege</b> (privilegio) y <b>privileged</b> (privilegiado): sin <i>d</i> en medio."),
+ C("She has ___ experience in teaching music to teenagers.",["comprehensive","extensive","extended"],"extensive","Mucha experiencia = <b>extensive experience</b>. <i>Comprehensive</i> = completo, que lo incluye todo: <i>a comprehensive guide</i>.")],
+r1:[
+ C("After years of practice, she ___ a professional pianist.",["become","became","becomed"],"became","Pasado: become – <b>became</b> – become."),
+ F("I always wanted to became a teacher.",[["wanted to become"]],["to became"],"I always wanted to become a teacher.","Después de <b>to</b> → forma base: <i>to <b>become</b></i>.")]
+};
+RULES.forEach(r=>{if(EXTRA13[r.id]) r.items.push(...EXTRA13[r.id])});
 RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
 const ALL=RULES.flatMap(r=>r.items);
 const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
