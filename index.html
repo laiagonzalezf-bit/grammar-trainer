@@ -886,6 +886,33 @@ RULES.push({id:"r31",name:"31 · DET: dictado",tip:["Como en <b>Listen and Type<
  D("Many experts believe that the situation will improve soon."),
  D("She has been teaching music for more than six years."),
  D("The results of the survey were surprisingly positive.")]});
+const EXTRA11={
+r8:[
+ C("I looked at the building ___ at least five minutes.",["during","for","since"],"for","Duración (cuánto tiempo) → <b>for</b>. <i>During</i> va con un momento o evento: <i>during the concert</i>."),
+ T("Estuve allí durante dos horas.",[["for two hours"]],["during two hours"],"I was there for two hours.","«Durante» + periodo = <b>for</b>."),
+ C("I fell asleep ___ the concert.",["for","during","since"],"during","<b>during</b> + evento: <i>during the concert, during the meeting</i>."),
+ F("The concert made me realize about the importance of the space.",[["realize the importance"]],["realize about"],"The concert made me realize the importance of the space.","<b>realize</b> + algo, sin preposición (como <i>understand</i>).")],
+r9:[
+ F("I wondered how could something be so beautiful.",[["how something could be"]],["how could something"],"I wondered how something could be so beautiful.","Pregunta dentro de otra frase → orden normal: <b>how something could be</b>.")],
+r5:[
+ C("The building is a masterpiece of ___ Catalan modernism.",["the","—","a"],"—","Movimientos artísticos en general, sin artículo: <i>Catalan modernism, Impressionism, Romanticism</i>.")],
+r1:[
+ G("Gaudí's style ___ a symbol of Catalan modernism. (become, en pasado)",["became"],"become – <b>became</b> – become.")],
+r15:[
+ C("The musicians walked onto the ___.",["scenario","stage","scene"],"stage","Falso amigo: el escenario = <b>the stage</b>. <i>Scenario</i> = situación posible."),
+ C("The concert hall had beautiful blue and red ___.",["illumination","lighting","lightning"],"lighting","La luz de un escenario = <b>lighting</b>. Ojo: <i>lightning</i> = rayo ⚡."),
+ F("The colors highlighted the beautiness of the place.",[["the beauty of"]],["beautiness"],"The colors highlighted the beauty of the place.","<i>Beautiness</i> no existe → <b>beauty</b>.")],
+r6:[
+ C("Spain is a ___ country.",["democratical","democratic"],"democratic","La mayoría solo tienen <b>-ic</b>: <i>democratic, dramatic, academic, specific</i>."),
+ C("We need a ___ solution to this problem.",["practic","practical"],"practical","Unas pocas solo tienen <b>-ical</b>: <i>practical, logical, physical, critical, typical, musical, medical</i>."),
+ C("Being late is a ___ mistake for new students.",["typic","typical"],"typical","Solo existe <b>typical</b>."),
+ C("The country's ___ growth slowed down last year.",["economic","economical"],"economic","<b>economic</b> = de la economía. <i>Economical</i> = que ahorra, barato."),
+ C("This car is very ___: it uses very little fuel.",["economic","economical"],"economical","<b>economical</b> = que ahorra."),
+ C("The election was a ___ day for the country.",["historic","historical"],"historic","<b>historic</b> = importante para la historia. <i>Historical</i> = relacionado con la historia."),
+ C("I teach ___ music and pop music.",["classic","classical"],"classical","<b>classical music</b> (no <i>classic music</i>)."),
+ C("The decision was made ___.",["democraticly","democratically","democratical"],"democratically","Adverbios: siempre <b>-ically</b> (excepto <i>publicly</i>).")]
+};
+RULES.forEach(r=>{if(EXTRA11[r.id]) r.items.push(...EXTRA11[r.id])});
 RULES.forEach(r=>r.items.forEach((it,i)=>{it.id=r.id+"-"+i;it.rule=r.id}));
 const ALL=RULES.flatMap(r=>r.items);
 const ruleById=Object.fromEntries(RULES.map(r=>[r.id,r]));
